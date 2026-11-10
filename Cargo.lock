@@ -1132,7 +1132,6 @@ name = "grapheme-ui-cli"
 version = "0.1.0"
 dependencies = [
  "grapheme-ui",
- "rndr_core",
 ]
 
 [[package]]
