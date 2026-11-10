@@ -16,9 +16,8 @@ serde_json = "1"
 thiserror = "1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
-# Pin the Part H branch until it lands on main; then retarget to main/tag.
-grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/rfc0007-ui-glyphs-3588", default-features = false, features = ["slim"] }
-grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/rfc0007-ui-glyphs-3588" }
+grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", default-features = false, features = ["slim"] }
+grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme" }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends
