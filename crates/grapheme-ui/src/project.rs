@@ -2,8 +2,8 @@
 
 use std::collections::{HashMap, HashSet};
 
-use rndr_core::{set_parent, despawn, Axis, Entity, Label, Layout, Size, World};
-use rndr_ui::controls::{host_intent, Button, ButtonProps, HostIntent};
+use rndr_core::{Axis, Entity, Label, Layout, Size, World, despawn, set_parent};
+use rndr_ui::controls::{Button, ButtonProps, HostIntent, host_intent};
 use rndr_ui::{UiId, UiPlugin};
 use serde_json::Value as JsonValue;
 
@@ -107,7 +107,9 @@ fn project_node(
 
     if let Some(prim) = node.get("$prim").and_then(JsonValue::as_str) {
         match prim {
-            "Column" | "Row" => project_group(world, parent, &key, role, prim, node, actions, proj, seen),
+            "Column" | "Row" => {
+                project_group(world, parent, &key, role, prim, node, actions, proj, seen)
+            }
             "Text" => project_text(world, parent, &key, role, node, proj),
             "Button" => project_button(world, parent, &key, role, node, actions, proj),
             other => Err(GraphemeUiError::Unsupported(format!(
@@ -131,6 +133,7 @@ fn project_node(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn project_group(
     world: &mut World,
     parent: Entity,

@@ -29,4 +29,4 @@ mod project;
 mod surface;
 
 pub use error::GraphemeUiError;
-pub use surface::{install, GraphemeNode, GraphemeSurface, ProjectedNode};
+pub use surface::{GraphemeNode, GraphemeSurface, ProjectedNode, install};

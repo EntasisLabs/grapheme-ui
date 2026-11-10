@@ -2,7 +2,7 @@
 //! invoke produce the same revisions; projected node keys/roles match View IR.
 
 use grapheme_sdk::GraphemeEngine;
-use grapheme_ui::{install, GraphemeSurface};
+use grapheme_ui::{GraphemeSurface, install};
 use rndr_core::{App, Layout};
 use serde_json::json;
 
@@ -88,10 +88,7 @@ fn expose_action_works_through_the_surface_session() {
     install(&mut app);
     let parent = app.world_mut().spawn((Layout::column(),));
     let mut surface = GraphemeSurface::mount(app.world_mut(), parent, SOURCE, None).unwrap();
-    assert!(surface
-        .actions()
-        .iter()
-        .any(|a| a.id == "expose:Increment"));
+    assert!(surface.actions().iter().any(|a| a.id == "expose:Increment"));
     let commit = surface
         .invoke_action(app.world_mut(), "expose:Increment")
         .unwrap();
