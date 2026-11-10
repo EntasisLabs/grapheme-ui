@@ -38,4 +38,4 @@ Native click and headless invoke therefore share one codepath.
 
 ## Catalog ownership
 
-RFC-0007: the primitive catalog is owned by GraphemeUI. Today the Grapheme compiler still bootstraps `Column` / `Row` / `Text` / `Button`. This crate projects that IR. A follow-up publishes catalog signatures from GraphemeUI for the compiler to load like modules.
+RFC-0007: the primitive catalog is owned by GraphemeUI. Today the Grapheme compiler still bootstraps `Column` / `Row` / `Text` / `Button` / `TextField`. This crate projects that IR. A follow-up publishes catalog signatures from GraphemeUI for the compiler to load like modules.

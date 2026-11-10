@@ -71,7 +71,7 @@ Manual checklist when a display is available:
 
 ## Accessibility
 
-After layout, every projected button is an `AccessRole::Button` in `rndr_core::access_tree`, and every projected text node is an `AccessRole::Label`. The role comes from the rndr widget (`Button`, `Label`), and `GraphemeNode.role` repeats the View IR role on the same entity. `cargo test -p grapheme-ui --test access` checks both, including after a click changes the label.
+After layout, every projected button is an `AccessRole::Button` in `rndr_core::access_tree`, every projected text node is an `AccessRole::Label`, and every projected text field is an `AccessRole::TextInput` whose name is the `label` prop. The role comes from the rndr widget (`Button`, `Label`, `TextField`), and `GraphemeNode.role` repeats the View IR role on the same entity (`button`, `text`, `textbox`). `cargo test -p grapheme-ui --test access` checks both, including after a click changes the label.
 
 `Column` and `Row` keep `GraphemeNode.role = "group"` and also carry `CollectionAccess` with `AccessRole::Group`. That marker does not make the group focusable, so it is not a tab stop. `rndr_core::access_tree` is unconditional. Publishing that tree to the operating system needs the `accesskit` feature on `rndr_render`, which the desktop feature enables. This check does not open a window.
 
@@ -90,7 +90,7 @@ cargo test -p embed
 
 ## Catalog (v1)
 
-Projects View IR primitives `Column`, `Row`, `Text`, and `Button` onto rndr layouts / labels / `rndr_ui::controls::Button`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
+Projects View IR primitives `Column`, `Row`, `Text`, `Button`, and `TextField` onto rndr layouts, labels, `rndr_ui::controls::Button`, and `rndr_core::TextField`. A `TextField` `change` is drained with payload `{ "value": "…" }`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
 
 ## Status
 

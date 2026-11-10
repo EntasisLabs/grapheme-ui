@@ -1,0 +1,70 @@
+// RFC-0007 C.7 + D + Part F: feed UI with if/for, TextField search, task-loaded posts.
+// Same program as EntasisLabs/grapheme examples/feed-view.gr.
+
+struct Post {
+  id: String
+  title: String
+  likes: Int
+}
+
+enum FeedStatus { idle, pending, ready, failed }
+
+state Feed {
+  status: FeedStatus = idle
+  posts: [Post] = []
+  failure: String = ""
+  likes_total: Int = 0
+  query: String = ""
+}
+
+mutation Like($id: String) on Feed {
+  apply { likes_total: $likes_total + 1 }
+}
+
+mutation Search($value: String) on Feed {
+  apply { query: $value }
+}
+
+mutation Reset on Feed {
+  apply { status: "idle", posts: [], failure: "", likes_total: 0, query: "" }
+}
+
+task LoadFeed on Feed {
+  apply { status: "pending", failure: "" }
+  core.value(value: [
+    { id: "1", title: "Hello Grapheme", likes: 0 },
+    { id: "2", title: "Store tasks land", likes: 2 }
+  ])
+  apply { status: "ready", posts: $current }
+}
+
+view FeedView on Feed {
+  Column(gap: 8) {
+    header: Text("Feed ({$likes_total} likes)")
+    search: TextField(value: $query, placeholder: "Search posts", label: "Search") {
+      on change: Search
+    }
+    if $status == "idle" {
+      Button(label: "Load feed") { on click: LoadFeed }
+    }
+    if $status == "pending" {
+      Text("Loading…")
+    }
+    if $status == "failed" {
+      Text($failure)
+    }
+    if $status == "ready" {
+      for $post in $posts key $post.id {
+        Row(gap: 4) {
+          Text($post.title)
+          like: Button(label: "Like") { on click: Like(id: $post.id) }
+        }
+      }
+    }
+  }
+}
+
+glyph FeedApp on Feed {
+  expose LoadFeed, Reset, Like, Search
+  FeedView
+}

@@ -249,6 +249,61 @@ fn drive_rejects_a_second_surface() {
     .unwrap();
 }
 
+const FIELD: &str = r#"
+state S {
+  query: String = ""
+}
+
+mutation Set($value: String) on S {
+  apply { query: $value }
+}
+
+view FieldView on S {
+  Column {
+    search: TextField(value: $query, placeholder: "Search posts", label: "Search") {
+      on change: Set
+    }
+  }
+}
+
+glyph FieldApp on S {
+  FieldView
+}
+"#;
+
+#[test]
+fn text_field_change_drains_the_value_payload() {
+    let mut app = App::new();
+    install(&mut app);
+    let parent = app.world_mut().spawn((Layout {
+        width: Size::Fill,
+        height: Size::Fill,
+        ..Layout::column()
+    },));
+    let surface = GraphemeSurface::mount(app.world_mut(), parent, FIELD, Some("FieldApp")).unwrap();
+    surface.drive(&mut app).unwrap();
+    app.update();
+
+    click_key(&mut app, "/search");
+    {
+        let input = &mut app.world_mut().resource_mut::<Input>().unwrap();
+        input.chars = "Store".into();
+        input.keys.clear();
+        input.key = None;
+    }
+    app.update();
+
+    with_driven_surface(app.world_mut(), |surface, _| {
+        assert_eq!(surface.session().snapshot("S").unwrap()["query"], "Store");
+        assert_eq!(
+            surface.ir_root().unwrap()["children"][0]["props"]["value"],
+            "Store",
+            "controlled value follows the change payload"
+        );
+    })
+    .unwrap();
+}
+
 #[test]
 fn with_driven_surface_restores_the_surface_after_panic() {
     let mut app = boot();

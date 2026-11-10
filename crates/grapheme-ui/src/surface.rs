@@ -5,10 +5,11 @@ use std::collections::HashMap;
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
 use grapheme_sdk::{GraphemeEngine, GraphemeStoreSession};
 use rndr_core::{
-    App, Entity, Layout, Schedule, Size, World, set_parent, take_action_intents_matching,
+    App, Entity, Layout, Schedule, Size, TextChanged, World, events, set_parent,
+    take_action_intents_matching,
 };
 use rndr_ui::controls::host_intent;
-use serde_json::Value as JsonValue;
+use serde_json::{Value as JsonValue, json};
 
 use crate::error::GraphemeUiError;
 use crate::project::{self, Projection};
@@ -129,7 +130,9 @@ impl GraphemeSurface {
 
     /// Drain rndr action intents owned by this surface.
     ///
-    /// Each successful invoke is synced before the next id runs. A later id
+    /// `TextChanged` events on projected text fields run first, each with
+    /// payload `{ "value": <text> }`. Button command intents follow, with no
+    /// payload. Each successful invoke is synced before the next id runs. A later id
     /// can go stale when an earlier invoke rebinds that action (its epoch
     /// moved). Syncing first keeps the widget tree and the command map on the
     /// store, so a click after this error uses the new id. The same outcome
@@ -147,15 +150,20 @@ impl GraphemeSurface {
         let requests = take_action_intents_matching(world, |w, intent| {
             owned.contains_key(&intent.entity) && host_intent(w, intent).is_some()
         });
-        let mut ids = Vec::new();
+        let mut jobs = Vec::new();
+        for event in events::<TextChanged>(world) {
+            if let Some(id) = self.projection.text_changes.get(&event.entity) {
+                jobs.push((id.clone(), Some(json!({ "value": event.text }))));
+            }
+        }
         for request in &requests {
             if let Some(id) = project::resolve_command(world, &self.projection, request) {
-                ids.push(id);
+                jobs.push((id, None));
             }
         }
         let mut commits = Vec::new();
-        for id in ids {
-            match self.session.invoke_action(&id, None) {
+        for (id, payload) in jobs {
+            match self.session.invoke_action(&id, payload) {
                 Ok(commit) => {
                     commits.push(commit);
                     if let Err(err) = self.sync(world) {

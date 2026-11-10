@@ -21,10 +21,10 @@
 //! # Surfaces
 //!
 //! [`GraphemeSurface`] mounts a UI glyph (`glyph Name on Store { … }`) under
-//! an rndr parent entity, projects View IR into `Column`/`Row`/`Text`/`Button`
-//! widgets, and routes button activations back through
-//! [`grapheme_sdk::GraphemeStoreSession::invoke_action`]. The session takes an
-//! optional payload; button clicks pass `None`.
+//! an rndr parent entity, projects View IR into `Column`/`Row`/`Text`/`Button`/
+//! `TextField` widgets, and routes activations back through
+//! [`grapheme_sdk::GraphemeStoreSession::invoke_action`]. Button clicks pass
+//! no payload. A `TextField` `change` passes `{ "value": <text> }`.
 
 #![deny(missing_docs)]
 

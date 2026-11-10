@@ -3,7 +3,8 @@
 use std::collections::{HashMap, HashSet};
 
 use rndr_core::{
-    AccessRole, Axis, CollectionAccess, Entity, Label, Layout, Size, World, despawn, set_parent,
+    AccessRole, Axis, Border, CapturesKeys, Children, CollectionAccess, Color, Entity, Focusable,
+    Label, Layout, Placeholder, Semantics, Size, TextField, World, despawn, set_parent,
 };
 use rndr_ui::controls::{Button, ButtonProps, HostIntent, host_intent};
 use rndr_ui::{UiId, UiPlugin};
@@ -22,6 +23,8 @@ pub(crate) struct Projection {
     /// HostIntent::Command token → Grapheme action id for this sync.
     pub commands: HashMap<u64, String>,
     next_cmd: u64,
+    /// TextField entity → `change` action id for this sync.
+    pub text_changes: HashMap<Entity, String>,
 }
 
 impl Projection {
@@ -32,6 +35,7 @@ impl Projection {
             next_ui: 1,
             commands: HashMap::new(),
             next_cmd: 1,
+            text_changes: HashMap::new(),
         }
     }
 
@@ -67,6 +71,7 @@ pub(crate) fn project_tree(
 ) -> Result<Entity, GraphemeUiError> {
     proj.commands.clear();
     proj.next_cmd = 1;
+    proj.text_changes.clear();
     let mut seen = HashSet::new();
     let entity = project_node(world, parent, root, actions, proj, &mut seen)?;
     // Drop entities whose keys disappeared this revision.
@@ -114,6 +119,7 @@ fn project_node(
             }
             "Text" => project_text(world, parent, &key, role, node, proj),
             "Button" => project_button(world, parent, &key, role, node, actions, proj),
+            "TextField" => project_text_field(world, parent, &key, role, node, actions, proj),
             other => Err(GraphemeUiError::Unsupported(format!(
                 "primitive '{other}' is not in the GraphemeUI v1 catalog"
             ))),
@@ -196,11 +202,36 @@ fn project_group(
         },
     );
     if let Some(children) = node.get("children").and_then(JsonValue::as_array) {
+        let mut order = Vec::with_capacity(children.len());
         for child in children {
-            project_node(world, entity, child, actions, proj, seen)?;
+            order.push(project_node(world, entity, child, actions, proj, seen)?);
         }
+        // `set_parent` appends a new child and leaves an existing one where it
+        // is. An `if` that turns on, or a `for` whose keys reorder, would
+        // otherwise paint in insertion order rather than source order.
+        order_children(world, entity, &order);
     }
     Ok(entity)
+}
+
+/// Put `order` first in `parent`'s child list. Children not in `order`
+/// (a branch that this sync is about to despawn) stay after them.
+fn order_children(world: &mut World, parent: Entity, order: &[Entity]) {
+    let Some(children) = world.get_mut::<Children>(parent) else {
+        return;
+    };
+    let mut next = Vec::with_capacity(children.list.len());
+    for entity in order {
+        if children.list.contains(entity) && !next.contains(entity) {
+            next.push(*entity);
+        }
+    }
+    for entity in children.list.iter().copied() {
+        if !next.contains(&entity) {
+            next.push(entity);
+        }
+    }
+    children.list = next;
 }
 
 fn project_text(
@@ -282,6 +313,102 @@ fn project_button(
         },
     );
     Ok(handle.root)
+}
+
+fn project_text_field(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+) -> Result<Entity, GraphemeUiError> {
+    let value = node
+        .pointer("/props/value")
+        .map(json_to_label)
+        .unwrap_or_default();
+    let placeholder = node
+        .pointer("/props/placeholder")
+        .and_then(JsonValue::as_str)
+        .unwrap_or("")
+        .to_string();
+    let name = node
+        .pointer("/props/label")
+        .and_then(JsonValue::as_str)
+        .filter(|label| !label.trim().is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| "Text field".to_string());
+    let entity = if let Some(&existing) = proj.entities.get(key) {
+        if let Some(label) = world.get_mut::<Label>(existing) {
+            label.text = value;
+        }
+        existing
+    } else {
+        let layout = Layout {
+            width: Size::Hug,
+            height: Size::Hug,
+            min_width: 180.0,
+            min_height: 36.0,
+            padding: 4.0,
+            ..Layout::column()
+        };
+        let e = world.spawn((
+            layout,
+            Label::new(value),
+            TextField,
+            Focusable,
+            CapturesKeys,
+            Border {
+                color: Color::rgb(0.45, 0.48, 0.55),
+                width: 1.0,
+            },
+        ));
+        set_parent(world, e, parent);
+        proj.entities.insert(key.to_string(), e);
+        e
+    };
+    if placeholder.is_empty() {
+        world.remove::<Placeholder>(entity);
+    } else {
+        world.insert(entity, Placeholder::new(placeholder));
+    }
+    world.insert(
+        entity,
+        Semantics {
+            name: Some(name),
+            description: String::new(),
+            readonly: false,
+        },
+    );
+    world.insert(
+        entity,
+        GraphemeNode {
+            key: key.to_string(),
+            role: role.or_else(|| Some("textbox".into())),
+        },
+    );
+    if let Some(action_id) = event_action_id(node, actions, key, "change") {
+        proj.text_changes.insert(entity, action_id);
+    }
+    Ok(entity)
+}
+
+fn event_action_id(
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    key: &str,
+    event: &str,
+) -> Option<String> {
+    node.pointer(&format!("/events/{event}/id"))
+        .and_then(JsonValue::as_str)
+        .or_else(|| {
+            actions
+                .iter()
+                .find(|action| action.key == key && action.event == event)
+                .map(|action| action.id.as_str())
+        })
+        .map(str::to_string)
 }
 
 fn json_to_label(value: &JsonValue) -> String {
