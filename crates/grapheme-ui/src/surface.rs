@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
 use grapheme_sdk::{GraphemeEngine, GraphemeStoreSession};
-use rndr_core::{set_parent, take_action_intents_matching, Entity, Layout, Size, World};
+use rndr_core::{Entity, Layout, Size, World, set_parent, take_action_intents_matching};
 use rndr_ui::controls::host_intent;
 use serde_json::Value as JsonValue;
 
@@ -167,7 +167,10 @@ impl GraphemeSurface {
 
     /// Current action list from the last snapshot.
     pub fn actions(&self) -> &[ViewAction] {
-        self.last.as_ref().map(|s| s.actions.as_slice()).unwrap_or(&[])
+        self.last
+            .as_ref()
+            .map(|s| s.actions.as_slice())
+            .unwrap_or(&[])
     }
 
     /// Evaluated View IR root from the last snapshot.

@@ -6,7 +6,7 @@
 //! cargo run -p counter
 //! ```
 
-use grapheme_ui::{install, GraphemeSurface};
+use grapheme_ui::{GraphemeSurface, install};
 use rndr_core::{App, Layout};
 
 fn main() {

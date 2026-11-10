@@ -16,11 +16,17 @@ serde_json = "1"
 thiserror = "1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
-grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", default-features = false, features = ["slim"] }
-grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme" }
+# Caret ranges so dependents can unify a compatible 0.8.x / 0.5.x.
+# Cargo.lock pins the release this workspace tests (grapheme 0.8.0, rndr 0.5.0).
+# grapheme-artifact 0.4.0 comes in transitively.
+# grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
+# its default `stage-b` feature does not pull grapheme-aot-container.
+grapheme-sdk = { version = "0.8.0", default-features = false, features = ["slim"] }
+grapheme-runtime = { version = "0.8.0", default-features = false }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends
 # on Grapheme; Grapheme never depends on rndr or this crate.
-rndr_core = { git = "https://github.com/EntasisLabs/rndr", package = "rndr_core" }
-rndr_ui = { git = "https://github.com/EntasisLabs/rndr", package = "rndr_ui" }
+# Headless tests use rndr_core + rndr_ui only (no GPU).
+rndr_core = { version = "0.5.0", package = "rndr_core" }
+rndr_ui = { version = "0.5.0", package = "rndr_ui" }
