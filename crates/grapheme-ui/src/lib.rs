@@ -35,5 +35,6 @@ mod surface;
 
 pub use error::GraphemeUiError;
 pub use surface::{
-    GraphemeNode, GraphemeSurface, ProjectedNode, drain_installed, install, with_driven_surface,
+    DrainStatus, GraphemeNode, GraphemeSurface, ProjectedNode, drain_installed, install,
+    with_driven_surface,
 };
