@@ -17,7 +17,7 @@ host application
 - **Grapheme** never depends on this crate or on rndr.
 - **rndr** never depends on Grapheme or this crate. rndr apps depend on grapheme-ui; rndr itself does not.
 - **Host apps** that want Grapheme UI add `grapheme-ui` to their `Cargo.toml` (opt-in at the app, not inside rndr).
-- This crate depends on the published **grapheme 0.8.0** family (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.5.0** (`rndr_core`, `rndr_ui`). Default tests stay headless: no window and no GPU.
+- This crate depends on the published **grapheme 0.9.0** family (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.5.0** (`rndr_core`, `rndr_ui`). Default tests stay headless: no window and no GPU.
 
 A later convenience re-export on the rndr facade (`features = ["grapheme"]`) is model **B** and is deliberately deferred.
 
@@ -29,6 +29,8 @@ A later convenience re-export on the rndr facade (`features = ["grapheme"]`) is 
 | rndr app with Grapheme inside | the rndr host | `GraphemeSurface::mount` under a host-owned parent entity |
 
 Both call the same surface. Embedding is not “script rndr frames with Grapheme”; it is mounting a compiled UI glyph into a host slot and driving it through the app session (`mount` / `sync` / `invoke_action` / `drain_actions`).
+
+`GraphemeSurface::builder` passes a policy guard, host factory, capability interceptor, or module-registry edit into that session. `const` field seeds are not on the public SDK (`GraphemeEngine::store_session` always uses `StoreSession::new`), so the builder does not accept them.
 
 ## Quick start (headless)
 
@@ -57,7 +59,10 @@ The `desktop` feature opens a real rndr window (`rndr` + `rndr_render`). Default
 
 ```sh
 cargo run -p counter-desktop --features desktop
+cargo run -p grapheme-ui-cli --features desktop -- run examples/feed-view.gr
 ```
+
+`grapheme-ui run <file.gr> [--glyph NAME]` compiles the file, mounts the only UI glyph (or the named one), and opens an rndr window titled with the glyph name. Compile failures print `file:line:col: message` when the compiler reports a position, and the process exits non-zero. The binary's default build does not link the GPU runner; pass `--features desktop` to open a window.
 
 Clicks take rndr's normal pointer path: the button emits `HostIntent::Command`, and an Update system calls `drain_actions`, which maps the token back to a Grapheme action id. The headless test `drain_click_matches_headless_session` drives that path with a synthetic pointer (no window) and checks the store against a pure Grapheme session.
 
@@ -71,7 +76,7 @@ Manual checklist when a display is available:
 
 ## Accessibility
 
-After layout, every projected button is an `AccessRole::Button` in `rndr_core::access_tree`, and every projected text node is an `AccessRole::Label`. The role comes from the rndr widget (`Button`, `Label`), and `GraphemeNode.role` repeats the View IR role on the same entity. `cargo test -p grapheme-ui --test access` checks both, including after a click changes the label.
+After layout, every projected button is an `AccessRole::Button` in `rndr_core::access_tree`, every projected text node is an `AccessRole::Label`, and every projected text field is an `AccessRole::TextInput` whose name is the `label` prop. The role comes from the rndr widget (`Button`, `Label`, `TextField`), and `GraphemeNode.role` repeats the View IR role on the same entity (`button`, `text`, `textbox`). `cargo test -p grapheme-ui --test access` checks both, including after a click changes the label.
 
 `Column` and `Row` keep `GraphemeNode.role = "group"` and also carry `CollectionAccess` with `AccessRole::Group`. That marker does not make the group focusable, so it is not a tab stop. `rndr_core::access_tree` is unconditional. Publishing that tree to the operating system needs the `accesskit` feature on `rndr_render`, which the desktop feature enables. This check does not open a window.
 
@@ -90,7 +95,7 @@ cargo test -p embed
 
 ## Catalog (v1)
 
-Projects View IR primitives `Column`, `Row`, `Text`, and `Button` onto rndr layouts / labels / `rndr_ui::controls::Button`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
+Projects View IR primitives `Column`, `Row`, `Text`, `Button`, and `TextField` onto rndr layouts, labels, `rndr_ui::controls::Button`, and `rndr_core::TextField`. A `TextField` `change` is drained with payload `{ "value": "…" }`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
 
 ## Status
 

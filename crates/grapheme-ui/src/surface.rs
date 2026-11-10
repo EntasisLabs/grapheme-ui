@@ -3,12 +3,15 @@
 use std::collections::HashMap;
 
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
-use grapheme_sdk::{GraphemeEngine, GraphemeStoreSession};
+use grapheme_sdk::GraphemeStoreSession;
+
+use crate::engine::SurfaceBuilder;
 use rndr_core::{
-    App, Entity, Layout, Schedule, Size, World, set_parent, take_action_intents_matching,
+    App, Entity, Layout, Schedule, Size, TextChanged, World, events, set_parent,
+    take_action_intents_matching,
 };
 use rndr_ui::controls::host_intent;
-use serde_json::Value as JsonValue;
+use serde_json::{Value as JsonValue, json};
 
 use crate::error::GraphemeUiError;
 use crate::project::{self, Projection};
@@ -52,13 +55,34 @@ pub struct GraphemeSurface {
 impl GraphemeSurface {
     /// Compile `source`, mount its UI glyph (or `glyph` if given), and project
     /// the first snapshot under `parent`.
+    ///
+    /// Uses a default engine. Pass a policy, host, interceptor, or module
+    /// registry through [`Self::builder`].
     pub fn mount(
         world: &mut World,
         parent: Entity,
         source: &str,
         glyph: Option<&str>,
     ) -> Result<Self, GraphemeUiError> {
-        let engine = GraphemeEngine::builder().build();
+        Self::builder().mount(world, parent, source, glyph)
+    }
+
+    /// Start a [`SurfaceBuilder`] for host engine configuration.
+    pub fn builder() -> SurfaceBuilder {
+        SurfaceBuilder::new()
+    }
+}
+
+impl SurfaceBuilder {
+    /// Compile `source` with this engine configuration and project the glyph.
+    pub fn mount(
+        self,
+        world: &mut World,
+        parent: Entity,
+        source: &str,
+        glyph: Option<&str>,
+    ) -> Result<GraphemeSurface, GraphemeUiError> {
+        let engine = self.engine();
         let mut session = engine.store_session(source)?;
         let snapshot = session.mount(glyph)?;
         let root = world.spawn((Layout {
@@ -67,7 +91,7 @@ impl GraphemeSurface {
             ..Layout::column()
         },));
         set_parent(world, root, parent);
-        let mut surface = Self {
+        let mut surface = GraphemeSurface {
             session,
             glyph: snapshot.glyph.clone(),
             root,
@@ -77,7 +101,9 @@ impl GraphemeSurface {
         surface.project_snapshot(world, snapshot)?;
         Ok(surface)
     }
+}
 
+impl GraphemeSurface {
     /// Surface container entity (child of the host parent).
     pub fn root(&self) -> Entity {
         self.root
@@ -111,19 +137,27 @@ impl GraphemeSurface {
     }
 
     /// Invoke a Grapheme action id (same path a button click uses), then sync.
+    ///
+    /// Passes no payload. An action that requires one fails the same way a
+    /// headless session does.
     pub fn invoke_action(
         &mut self,
         world: &mut World,
         id: &str,
     ) -> Result<StoreCommit, GraphemeUiError> {
-        let commit = self.session.invoke_action(id).map_err(map_session_error)?;
+        let commit = self
+            .session
+            .invoke_action(id, None)
+            .map_err(map_session_error)?;
         self.sync(world)?;
         Ok(commit)
     }
 
     /// Drain rndr action intents owned by this surface.
     ///
-    /// Each successful invoke is synced before the next id runs. A later id
+    /// `TextChanged` events on projected text fields run first, each with
+    /// payload `{ "value": <text> }`. Button command intents follow, with no
+    /// payload. Each successful invoke is synced before the next id runs. A later id
     /// can go stale when an earlier invoke rebinds that action (its epoch
     /// moved). Syncing first keeps the widget tree and the command map on the
     /// store, so a click after this error uses the new id. The same outcome
@@ -141,15 +175,20 @@ impl GraphemeSurface {
         let requests = take_action_intents_matching(world, |w, intent| {
             owned.contains_key(&intent.entity) && host_intent(w, intent).is_some()
         });
-        let mut ids = Vec::new();
+        let mut jobs = Vec::new();
+        for event in events::<TextChanged>(world) {
+            if let Some(id) = self.projection.text_changes.get(&event.entity) {
+                jobs.push((id.clone(), Some(json!({ "value": event.text }))));
+            }
+        }
         for request in &requests {
             if let Some(id) = project::resolve_command(world, &self.projection, request) {
-                ids.push(id);
+                jobs.push((id, None));
             }
         }
         let mut commits = Vec::new();
-        for id in ids {
-            match self.session.invoke_action(&id) {
+        for (id, payload) in jobs {
+            match self.session.invoke_action(&id, payload) {
                 Ok(commit) => {
                     commits.push(commit);
                     if let Err(err) = self.sync(world) {

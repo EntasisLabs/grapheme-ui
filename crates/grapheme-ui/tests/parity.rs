@@ -70,7 +70,7 @@ fn surface_invoke_matches_headless_session() {
     let headless_id = action_id(&snap, "/increment");
     // Epochs start at 1 on both sides for the same binding.
     assert_eq!(headless_id, id);
-    let headless_commit = headless.invoke_action(&headless_id).unwrap();
+    let headless_commit = headless.invoke_action(&headless_id, None).unwrap();
     assert_eq!(headless_commit.revision, commit.revision);
     assert_eq!(
         headless_commit.committed.unwrap().diff,

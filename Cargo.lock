@@ -1039,9 +1039,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-artifact"
-version = "0.4.0"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67d83a0ca4b3a40089dbd55db28c7e1ab4799ed8ac0fb5db7cc78d02e5d777b5"
+checksum = "d0cba3f7600632ef601f30b3e6476688269b2b70c0a24505ad287e04c5cf6927"
 dependencies = [
  "hex",
  "serde",
@@ -1052,9 +1052,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-compiler"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77c714d97ba910e17dd03ca53cd1aa83cbf887b1d179e53e631dcca927fed549"
+checksum = "7f411efb982cc4f3275b9a10fcd5f3e1a86ba0385fcd1a6bc2813fa2a7d9f9ef"
 dependencies = [
  "grapheme-artifact",
  "grapheme-signatures",
@@ -1067,9 +1067,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-runtime"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3b216d82c0006c2f0c5af5ddb7f21c9c0f3d9a6f4fad7f4a833361bdc4b3035"
+checksum = "f60e70b5624ba1c095b70a9fbae86b61b5e520e643d14eff7c71809e2ef04b87"
 dependencies = [
  "grapheme-artifact",
  "grapheme-signatures",
@@ -1082,9 +1082,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-sdk"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7474e46a370b5a6e4d77e68bc3e677a040479551dbdcde2426865d3fad4872fe"
+checksum = "4d16e813ccf6cf175b9eae9b7ea695098db68ad3fe7f5b2869d30406cccf8076"
 dependencies = [
  "grapheme-artifact",
  "grapheme-compiler",
@@ -1099,15 +1099,15 @@ dependencies = [
 
 [[package]]
 name = "grapheme-signatures"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea5ec4da289763194c0991663afa93354a5e24b81d6deada02afd9fd79e388bf"
+checksum = "488e0700e4b2f5985e8b36f0bdc0577c69784fb93b95249577edd4cdba586e9a"
 
 [[package]]
 name = "grapheme-stdlib"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "946e2a11624fd26c0252ef42c4e07c6227e66d0335644f817cba7a17efcc9c1e"
+checksum = "c7c40d6bb03f92512b0fbe4761c6f3f111c382ff75aac53402204c7cee3e62f0"
 dependencies = [
  "serde_json",
 ]
@@ -1125,6 +1125,14 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "grapheme-ui-cli"
+version = "0.1.0"
+dependencies = [
+ "grapheme-ui",
+ "rndr_core",
 ]
 
 [[package]]
@@ -2968,7 +2976,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

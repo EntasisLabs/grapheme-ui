@@ -150,7 +150,7 @@ fn drain_click_matches_headless_session() {
             id.contains("#click@"),
             "native path and headless path share view action ids, got {id}"
         );
-        let commit = headless.invoke_action(&id).unwrap();
+        let commit = headless.invoke_action(&id, None).unwrap();
         headless_diffs.push(commit.committed.unwrap().diff);
     }
     assert_eq!(headless_diffs, diffs);
@@ -245,6 +245,61 @@ fn drive_rejects_a_second_surface() {
     assert!(matches!(err, GraphemeUiError::Usage(_)), "{err}");
     with_driven_surface(app.world_mut(), |surface, _| {
         assert_eq!(surface.glyph(), "CounterApp");
+    })
+    .unwrap();
+}
+
+const FIELD: &str = r#"
+state S {
+  query: String = ""
+}
+
+mutation Set($value: String) on S {
+  apply { query: $value }
+}
+
+view FieldView on S {
+  Column {
+    search: TextField(value: $query, placeholder: "Search posts", label: "Search") {
+      on change: Set
+    }
+  }
+}
+
+glyph FieldApp on S {
+  FieldView
+}
+"#;
+
+#[test]
+fn text_field_change_drains_the_value_payload() {
+    let mut app = App::new();
+    install(&mut app);
+    let parent = app.world_mut().spawn((Layout {
+        width: Size::Fill,
+        height: Size::Fill,
+        ..Layout::column()
+    },));
+    let surface = GraphemeSurface::mount(app.world_mut(), parent, FIELD, Some("FieldApp")).unwrap();
+    surface.drive(&mut app).unwrap();
+    app.update();
+
+    click_key(&mut app, "/search");
+    {
+        let input = &mut app.world_mut().resource_mut::<Input>().unwrap();
+        input.chars = "Store".into();
+        input.keys.clear();
+        input.key = None;
+    }
+    app.update();
+
+    with_driven_surface(app.world_mut(), |surface, _| {
+        assert_eq!(surface.session().snapshot("S").unwrap()["query"], "Store");
+        assert_eq!(
+            surface.ir_root().unwrap()["children"][0]["props"]["value"],
+            "Store",
+            "controlled value follows the change payload"
+        );
     })
     .unwrap();
 }

@@ -1,0 +1,19 @@
+[package]
+name = "grapheme-ui-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Open a Grapheme UI glyph in a desktop window"
+
+[features]
+# Winit/wgpu window. Default `cargo test` does not enable this.
+desktop = ["grapheme-ui/desktop", "dep:rndr_core"]
+
+[[bin]]
+name = "grapheme-ui"
+path = "src/main.rs"
+
+[dependencies]
+grapheme-ui = { workspace = true }
+rndr_core = { workspace = true, optional = true }
