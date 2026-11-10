@@ -1,0 +1,16 @@
+[package]
+name = "embed"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "rndr host that mounts a Grapheme guest. rndr itself does not depend on Grapheme."
+
+[features]
+# Native window. Default `cargo run -p embed` stays headless.
+desktop = ["grapheme-ui/desktop"]
+
+[dependencies]
+grapheme-ui = { workspace = true }
+rndr_core = { workspace = true }
+rndr_ui = { workspace = true }

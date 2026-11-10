@@ -4,6 +4,7 @@ members = [
     "crates/grapheme-ui",
     "examples/counter",
     "examples/counter-desktop",
+    "examples/embed",
 ]
 
 [workspace.package]

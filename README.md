@@ -15,7 +15,7 @@ host application
 ```
 
 - **Grapheme** never depends on this crate or on rndr.
-- **rndr** never depends on Grapheme or this crate.
+- **rndr** never depends on Grapheme or this crate. rndr apps depend on grapheme-ui; rndr itself does not.
 - **Host apps** that want Grapheme UI add `grapheme-ui` to their `Cargo.toml` (opt-in at the app, not inside rndr).
 - This crate depends on the published **grapheme 0.8.0** family (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.5.0** (`rndr_core`, `rndr_ui`). Default tests stay headless: no window and no GPU.
 
@@ -77,10 +77,21 @@ After layout, every projected button is an `AccessRole::Button` in `rndr_core::a
 
 `expose:` actions (key `expose/Increment`) are session entry points, not widgets. Every `click` action key is in the projected set.
 
+## Embed
+
+An rndr app can mount a Grapheme glyph in a slot it owns. The host keeps its own widgets; guest clicks are drained by the surface and never require the host to know action id strings.
+
+```sh
+cargo run -p embed
+cargo test -p embed
+```
+
+`cargo run -p embed --features desktop` opens the same shell in a window (needs a display). rndr apps depend on grapheme-ui; rndr itself does not.
+
 ## Catalog (v1)
 
 Projects View IR primitives `Column`, `Row`, `Text`, and `Button` onto rndr layouts / labels / `rndr_ui::controls::Button`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
 
 ## Status
 
-Vertical slice: headless mount of `CounterApp`, projected node keys/roles, surface invoke parity with the headless Grapheme session, a desktop runner that drains real button activations, and an access-tree check that buttons and labels keep rndr's roles. The rndr facade re-export (model B) stays deferred. An embed demo (rndr host mounts a Grapheme surface) is next.
+Vertical slice: headless mount of `CounterApp`, projected node keys/roles, surface invoke parity with the headless Grapheme session, a desktop runner that drains real button activations, an access-tree check that buttons and labels keep rndr's roles, and an embed demo where an rndr host mounts the guest. The rndr facade re-export (model B) stays deferred: it would be an optional feature in the rndr repo, and rndr would depend only on this crate.
