@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
-members = ["crates/grapheme-ui", "examples/counter"]
+members = [
+    "crates/grapheme-ui",
+    "examples/counter",
+    "examples/counter-desktop",
+]
 
 [workspace.package]
 version = "0.1.0"
@@ -30,3 +34,6 @@ grapheme-runtime = { version = "0.8.0", default-features = false }
 # Headless tests use rndr_core + rndr_ui only (no GPU).
 rndr_core = { version = "0.5.0", package = "rndr_core" }
 rndr_ui = { version = "0.5.0", package = "rndr_ui" }
+# Window loop. Off unless a host enables grapheme-ui's `desktop` feature.
+rndr = { version = "0.5.0", default-features = false }
+rndr_render = { version = "0.5.0", default-features = false }
