@@ -4,7 +4,9 @@ use std::collections::HashMap;
 
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
 use grapheme_sdk::{GraphemeEngine, GraphemeStoreSession};
-use rndr_core::{Entity, Layout, Size, World, set_parent, take_action_intents_matching};
+use rndr_core::{
+    App, Entity, Layout, Schedule, Size, World, set_parent, take_action_intents_matching,
+};
 use rndr_ui::controls::host_intent;
 use serde_json::Value as JsonValue;
 
@@ -202,4 +204,69 @@ impl GraphemeSurface {
 /// Install [`rndr_ui::UiPlugin`] on an [`rndr_core::App`] (idempotent).
 pub fn install(app: &mut rndr_core::App) {
     project::ensure_ui_plugin(app);
+}
+
+/// One driven surface, stored as a UI-thread local so an Update system can
+/// take it out, drain intents, and put it back. One per world.
+struct InstalledSurface(Option<GraphemeSurface>);
+
+impl GraphemeSurface {
+    /// Park this surface on `app` and drain its actions on every Update,
+    /// after rndr has turned a pointer or keyboard activation into a host intent.
+    ///
+    /// Calling this again replaces the parked surface. The drain system is
+    /// registered once.
+    pub fn drive(self, app: &mut App) {
+        let already = app.world().has_local::<InstalledSurface>();
+        app.world_mut().insert_local(InstalledSurface(Some(self)));
+        if !already {
+            app.add_system(Schedule::Update, drain_installed);
+        }
+    }
+}
+
+/// Update system installed by [`GraphemeSurface::drive`].
+///
+/// No-op when the surface is not parked. Errors are printed; the surface
+/// stays parked so the next frame can try again.
+pub fn drain_installed(world: &mut World) {
+    let Some(mut surface) = take_driven(world) else {
+        return;
+    };
+    if let Err(err) = surface.drain_actions(world) {
+        eprintln!("grapheme-ui: {err}");
+    }
+    restore_driven(world, surface);
+}
+
+/// Run `f` with the surface parked by [`GraphemeSurface::drive`].
+///
+/// The surface is not in the world for the duration of `f`, so `f` may
+/// borrow `world` exclusively. Do not call [`GraphemeSurface::drive`] or
+/// [`drain_installed`] from `f`.
+pub fn with_driven_surface<R>(
+    world: &mut World,
+    f: impl FnOnce(&mut GraphemeSurface, &mut World) -> R,
+) -> Result<R, GraphemeUiError> {
+    let mut surface = take_driven(world).ok_or_else(|| {
+        GraphemeUiError::Usage(
+            "no driven GraphemeSurface; call GraphemeSurface::drive first".into(),
+        )
+    })?;
+    let result = f(&mut surface, world);
+    restore_driven(world, surface);
+    Ok(result)
+}
+
+fn take_driven(world: &mut World) -> Option<GraphemeSurface> {
+    world
+        .local_mut::<InstalledSurface>()
+        .and_then(|slot| slot.0.take())
+}
+
+fn restore_driven(world: &mut World, surface: GraphemeSurface) {
+    match world.local_mut::<InstalledSurface>() {
+        Some(slot) => slot.0 = Some(surface),
+        None => world.insert_local(InstalledSurface(Some(surface))),
+    }
 }

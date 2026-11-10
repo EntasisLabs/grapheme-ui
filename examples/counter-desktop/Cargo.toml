@@ -1,0 +1,18 @@
+[package]
+name = "counter-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+# Winit/wgpu window. Default `cargo test` does not enable this.
+desktop = ["grapheme-ui/desktop"]
+
+[[bin]]
+name = "counter-desktop"
+path = "src/main.rs"
+
+[dependencies]
+grapheme-ui = { workspace = true }
+rndr_core = { workspace = true }

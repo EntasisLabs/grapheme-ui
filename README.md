@@ -51,10 +51,28 @@ cargo run -p counter
 cargo test -p grapheme-ui
 ```
 
+## Desktop counter
+
+The `desktop` feature opens a real rndr window (`rndr` + `rndr_render`). Default tests stay headless and do not compile the GPU runner. A display is required to launch the window; CI does not start it.
+
+```sh
+cargo run -p counter-desktop --features desktop
+```
+
+Clicks take rndr's normal pointer path: the button emits `HostIntent::Command`, and an Update system calls `drain_actions`, which maps the token back to a Grapheme action id. The headless test `drain_click_matches_headless_session` drives that path with a synthetic pointer (no window) and checks the store against a pure Grapheme session.
+
+Manual checklist when a display is available:
+
+1. The window title is `GraphemeUI — Counter`.
+2. The label reads `Count: 0 (doubled: 0)`, with buttons Increment and Add 5.
+3. Click Increment. The label becomes `Count: 1 (doubled: 2)`.
+4. Click Increment again, then Add 5. The label becomes `Count: 7 (doubled: 14)`.
+5. Close the window. The process exits.
+
 ## Catalog (v1)
 
 Projects View IR primitives `Column`, `Row`, `Text`, and `Button` onto rndr layouts / labels / `rndr_ui::controls::Button`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
 
 ## Status
 
-Vertical slice: headless mount of `CounterApp`, projected node keys/roles, and surface invoke parity with the headless Grapheme session. Windowed desktop runner and rndr facade re-export (B) are next.
+Vertical slice: headless mount of `CounterApp`, projected node keys/roles, surface invoke parity with the headless Grapheme session, and a desktop runner that drains real button activations. The rndr facade re-export (model B) stays deferred. Accessibility identity against rndr's access tree is next.
