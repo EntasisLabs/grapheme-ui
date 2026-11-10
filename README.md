@@ -30,6 +30,8 @@ A later convenience re-export on the rndr facade (`features = ["grapheme"]`) is 
 
 Both call the same surface. Embedding is not “script rndr frames with Grapheme”; it is mounting a compiled UI glyph into a host slot and driving it through the app session (`mount` / `sync` / `invoke_action` / `drain_actions`).
 
+`GraphemeSurface::builder` passes a policy guard, host factory, capability interceptor, or module-registry edit into that session. `const` field seeds are not on the public SDK (`GraphemeEngine::store_session` always uses `StoreSession::new`), so the builder does not accept them.
+
 ## Quick start (headless)
 
 ```rust

@@ -3,7 +3,9 @@
 use std::collections::HashMap;
 
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
-use grapheme_sdk::{GraphemeEngine, GraphemeStoreSession};
+use grapheme_sdk::GraphemeStoreSession;
+
+use crate::engine::SurfaceBuilder;
 use rndr_core::{
     App, Entity, Layout, Schedule, Size, TextChanged, World, events, set_parent,
     take_action_intents_matching,
@@ -53,13 +55,34 @@ pub struct GraphemeSurface {
 impl GraphemeSurface {
     /// Compile `source`, mount its UI glyph (or `glyph` if given), and project
     /// the first snapshot under `parent`.
+    ///
+    /// Uses a default engine. Pass a policy, host, interceptor, or module
+    /// registry through [`Self::builder`].
     pub fn mount(
         world: &mut World,
         parent: Entity,
         source: &str,
         glyph: Option<&str>,
     ) -> Result<Self, GraphemeUiError> {
-        let engine = GraphemeEngine::builder().build();
+        Self::builder().mount(world, parent, source, glyph)
+    }
+
+    /// Start a [`SurfaceBuilder`] for host engine configuration.
+    pub fn builder() -> SurfaceBuilder {
+        SurfaceBuilder::new()
+    }
+}
+
+impl SurfaceBuilder {
+    /// Compile `source` with this engine configuration and project the glyph.
+    pub fn mount(
+        self,
+        world: &mut World,
+        parent: Entity,
+        source: &str,
+        glyph: Option<&str>,
+    ) -> Result<GraphemeSurface, GraphemeUiError> {
+        let engine = self.engine();
         let mut session = engine.store_session(source)?;
         let snapshot = session.mount(glyph)?;
         let root = world.spawn((Layout {
@@ -68,7 +91,7 @@ impl GraphemeSurface {
             ..Layout::column()
         },));
         set_parent(world, root, parent);
-        let mut surface = Self {
+        let mut surface = GraphemeSurface {
             session,
             glyph: snapshot.glyph.clone(),
             root,
@@ -78,7 +101,9 @@ impl GraphemeSurface {
         surface.project_snapshot(world, snapshot)?;
         Ok(surface)
     }
+}
 
+impl GraphemeSurface {
     /// Surface container entity (child of the host parent).
     pub fn root(&self) -> Entity {
         self.root

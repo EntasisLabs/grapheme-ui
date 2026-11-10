@@ -30,10 +30,14 @@
 
 #[cfg(feature = "desktop")]
 pub mod desktop;
+mod engine;
 mod error;
 mod project;
 mod surface;
 
+pub use engine::{
+    CapabilityCall, CapabilityHost, HostCallError, ModuleRegistry, PolicyGuard, SurfaceBuilder,
+};
 pub use error::GraphemeUiError;
 pub use surface::{
     DrainStatus, GraphemeNode, GraphemeSurface, ProjectedNode, drain_installed, install,
