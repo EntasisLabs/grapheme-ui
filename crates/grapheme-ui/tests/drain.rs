@@ -150,7 +150,7 @@ fn drain_click_matches_headless_session() {
             id.contains("#click@"),
             "native path and headless path share view action ids, got {id}"
         );
-        let commit = headless.invoke_action(&id).unwrap();
+        let commit = headless.invoke_action(&id, None).unwrap();
         headless_diffs.push(commit.committed.unwrap().diff);
     }
     assert_eq!(headless_diffs, diffs);

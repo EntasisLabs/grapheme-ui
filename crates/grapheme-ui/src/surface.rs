@@ -111,12 +111,18 @@ impl GraphemeSurface {
     }
 
     /// Invoke a Grapheme action id (same path a button click uses), then sync.
+    ///
+    /// Passes no payload. An action that requires one fails the same way a
+    /// headless session does.
     pub fn invoke_action(
         &mut self,
         world: &mut World,
         id: &str,
     ) -> Result<StoreCommit, GraphemeUiError> {
-        let commit = self.session.invoke_action(id).map_err(map_session_error)?;
+        let commit = self
+            .session
+            .invoke_action(id, None)
+            .map_err(map_session_error)?;
         self.sync(world)?;
         Ok(commit)
     }
@@ -149,7 +155,7 @@ impl GraphemeSurface {
         }
         let mut commits = Vec::new();
         for id in ids {
-            match self.session.invoke_action(&id) {
+            match self.session.invoke_action(&id, None) {
                 Ok(commit) => {
                     commits.push(commit);
                     if let Err(err) = self.sync(world) {

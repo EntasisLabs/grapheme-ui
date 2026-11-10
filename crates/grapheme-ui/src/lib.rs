@@ -23,7 +23,8 @@
 //! [`GraphemeSurface`] mounts a UI glyph (`glyph Name on Store { … }`) under
 //! an rndr parent entity, projects View IR into `Column`/`Row`/`Text`/`Button`
 //! widgets, and routes button activations back through
-//! [`grapheme_runtime::StoreSession::invoke_action`].
+//! [`grapheme_sdk::GraphemeStoreSession::invoke_action`]. The session takes an
+//! optional payload; button clicks pass `None`.
 
 #![deny(missing_docs)]
 

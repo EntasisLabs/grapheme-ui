@@ -21,13 +21,13 @@ serde_json = "1"
 thiserror = "1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
-# Caret ranges so dependents can unify a compatible 0.8.x / 0.5.x.
-# Cargo.lock pins the release this workspace tests (grapheme 0.8.0, rndr 0.5.0).
-# grapheme-artifact 0.4.0 comes in transitively.
+# Caret ranges so dependents can unify a compatible 0.9.x / 0.5.x.
+# Cargo.lock pins the release this workspace tests (grapheme 0.9.0, rndr 0.5.0).
+# grapheme-artifact 0.5.0 comes in transitively.
 # grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
 # its default `stage-b` feature does not pull grapheme-aot-container.
-grapheme-sdk = { version = "0.8.0", default-features = false, features = ["slim"] }
-grapheme-runtime = { version = "0.8.0", default-features = false }
+grapheme-sdk = { version = "0.9.0", default-features = false, features = ["slim"] }
+grapheme-runtime = { version = "0.9.0", default-features = false }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends
