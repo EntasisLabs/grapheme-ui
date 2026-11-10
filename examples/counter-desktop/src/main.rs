@@ -53,6 +53,6 @@ fn main() {
     },));
     let surface = GraphemeSurface::mount(app.world_mut(), parent, source, Some("CounterApp"))
         .expect("mount CounterApp");
-    surface.drive(&mut app);
+    surface.drive(&mut app).expect("park CounterApp");
     grapheme_ui::desktop::run(app);
 }

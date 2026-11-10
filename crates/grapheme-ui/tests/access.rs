@@ -1,12 +1,11 @@
 //! Projected keys and roles match View IR, and rndr's headless access tree
 //! reports button and label roles for those entities.
 //!
-//! `Column` / `Row` stay `GraphemeNode.role = "group"`. rndr flattens layout
-//! containers that have no access role, so those groups are not
-//! `AccessRole::Group`. A focusable group would add a tab stop the glyph did
-//! not declare. Platform AccessKit is an `rndr_render` feature; `access_tree`
-//! is the headless tree that feature publishes, and this test does not enable
-//! it or open a window.
+//! `Column` / `Row` carry `CollectionAccess { role: Group, .. }`, so
+//! `access_tree` reports `AccessRole::Group` without making the group a tab
+//! stop. `access_tree` is always available from `rndr_core`. Pushing that tree
+//! to the OS needs the `accesskit` feature on `rndr_render`. This test does
+//! not open a window.
 //!
 //! `expose:` actions (`key` like `expose/Increment`) are session entry points,
 //! not projected widgets. Every `click` action key is in the projected set.
@@ -130,15 +129,15 @@ fn assert_identity(surface: &GraphemeSurface, world: &World) {
                 assert_eq!(access.name, ir.text.clone().unwrap_or_default());
             }
             "group" => {
-                if let Some(access) = access {
-                    assert_eq!(
-                        access.role,
-                        AccessRole::Group,
-                        "group {} got access role {:?}",
-                        node.key,
-                        access.role
-                    );
-                }
+                let access =
+                    access.unwrap_or_else(|| panic!("group {} has no access node", node.key));
+                assert_eq!(
+                    access.role,
+                    AccessRole::Group,
+                    "group {} access role",
+                    node.key
+                );
+                assert!(!access.focusable, "group {} became a tab stop", node.key);
             }
             other => panic!("unexpected projected role {other} on {}", node.key),
         }
