@@ -37,6 +37,9 @@ pub fn boot() -> App {
     let title = app.world_mut().spawn((Label::new("Host shell"),));
     set_parent(app.world_mut(), title, shell);
 
+    // Guest buttons also use HostIntent::Command, and the first one is
+    // Command(1) as well. Tokens are not globally unique. drain_actions keeps
+    // a guest click by entity, and drain_host keeps a host click the same way.
     let host_button = Button::mount(
         app.world_mut(),
         shell,
@@ -62,7 +65,7 @@ pub fn boot() -> App {
 
     let surface = GraphemeSurface::mount(app.world_mut(), guest_slot, SOURCE, Some("CounterApp"))
         .expect("mount CounterApp");
-    surface.drive(&mut app);
+    surface.drive(&mut app).expect("park the guest surface");
     app.add_system(Schedule::Update, drain_host);
     app
 }
@@ -76,11 +79,15 @@ pub fn host_pings(app: &App) -> u64 {
 }
 
 /// Guest store revision. Does not invoke anything.
-pub fn guest_revision(app: &mut App) -> u64 {
+///
+/// `None` when the guest surface is not parked. A missing surface is not
+/// revision 0.
+pub fn guest_revision(app: &mut App) -> Option<u64> {
     with_driven_surface(app.world_mut(), |surface, _| {
-        surface.snapshot().map(|s| s.revision).unwrap_or(0)
+        surface.snapshot().map(|s| s.revision)
     })
-    .unwrap_or(0)
+    .ok()
+    .flatten()
 }
 
 /// Guest value label from the projected view, not from an action id.
@@ -118,7 +125,10 @@ pub fn run_headless(app: &mut App) {
     click_guest(app, "Increment");
     click_guest(app, "Add 5");
     println!("host pings: {}", host_pings(app));
-    println!("guest revision: {}", guest_revision(app));
+    println!(
+        "guest revision: {}",
+        guest_revision(app).expect("guest surface")
+    );
     println!("guest label: {}", guest_label(app));
 }
 

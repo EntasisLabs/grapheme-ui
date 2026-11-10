@@ -43,7 +43,6 @@ jobs:
         run: cargo test --locked --workspace
 
   # Compiles the winit/wgpu runner. Does not open a window.
-  # The embed example is added to this command on the embed branch.
   desktop:
     name: desktop-linux
     runs-on: ubuntu-latest
@@ -56,4 +55,4 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pkg-config libxkbcommon-dev libwayland-dev libfontconfig1-dev
       - uses: Swatinem/rust-cache@v2
       - name: Clippy (desktop)
-        run: cargo clippy --locked -p grapheme-ui -p counter-desktop --all-targets --features desktop -- -D warnings
+        run: cargo clippy --locked -p grapheme-ui -p counter-desktop -p embed --all-targets --features desktop -- -D warnings
