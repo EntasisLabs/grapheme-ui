@@ -5,7 +5,7 @@
 //! a `for` list whose keys change order, must still paint in source order.
 
 use grapheme_ui::{GraphemeSurface, install};
-use rndr_core::{App, Entity, Label, Layout, World, children_of};
+use rndr_core::{App, Entity, Label, Layout, Rect, Size, World, children_of};
 
 const ORDER: &str = r#"
 state S {
@@ -90,6 +90,41 @@ fn if_branch_and_for_list_follow_source_order() {
     );
 }
 
+const COUNTER: &str = include_str!("../../../examples/counter/counter.gr");
+
+#[test]
+fn counter_label_and_buttons_keep_a_single_line() {
+    let mut app = App::new();
+    install(&mut app);
+    let parent = app.world_mut().spawn((Layout {
+        width: Size::Fill,
+        height: Size::Fill,
+        ..Layout::column()
+    },));
+    let surface =
+        GraphemeSurface::mount(app.world_mut(), parent, COUNTER, Some("CounterApp")).unwrap();
+    app.update();
+    let world = app.world();
+    for node in surface.projected_nodes(world) {
+        let Some(role) = node.role.as_deref() else {
+            continue;
+        };
+        if role != "button" && role != "text" {
+            continue;
+        }
+        let rect = world.get::<Rect>(node.entity).copied().unwrap_or_default();
+        let text = first_label(world, node.entity).unwrap_or_default();
+        assert!(
+            rect.w >= text.chars().count() as f32 * 8.0,
+            "{role} {text:?} is narrower than its text: {rect:?}"
+        );
+        assert!(
+            rect.h > 8.0 && rect.h < 80.0,
+            "{role} {text:?} is not one line: {rect:?}"
+        );
+    }
+}
+
 const FEED: &str = include_str!("../../../examples/feed-view.gr");
 
 fn first_label(world: &World, entity: Entity) -> Option<String> {
@@ -138,6 +173,19 @@ fn feed_view_mounts_and_lists_posts_in_source_order() {
         feed_labels(&surface, app.world()),
         ["Feed (0 likes)", "", "Load feed"]
     );
+    app.update();
+    let world = app.world();
+    for node in surface.projected_nodes(world) {
+        if node.role.as_deref() != Some("button") {
+            continue;
+        }
+        let rect = world.get::<Rect>(node.entity).copied().unwrap_or_default();
+        let text = first_label(world, node.entity).unwrap_or_default();
+        assert!(
+            rect.w >= text.chars().count() as f32 * 7.0 && rect.h < 80.0,
+            "feed button {text:?} {rect:?}"
+        );
+    }
 
     surface
         .invoke_action(app.world_mut(), "expose:LoadFeed")

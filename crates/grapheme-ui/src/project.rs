@@ -4,7 +4,8 @@ use std::collections::{HashMap, HashSet};
 
 use rndr_core::{
     AccessRole, Axis, Border, CapturesKeys, Children, CollectionAccess, Color, Entity, Focusable,
-    Label, Layout, Placeholder, Semantics, Size, TextField, World, despawn, set_parent,
+    Label, Layout, Placeholder, Semantics, Size, TextField, TextOverflow, World, children_of,
+    despawn, set_parent,
 };
 use rndr_ui::controls::{Button, ButtonProps, HostIntent, host_intent};
 use rndr_ui::{UiId, UiPlugin};
@@ -252,11 +253,13 @@ fn project_text(
         }
         existing
     } else {
-        let e = world.spawn((Label::new(content),));
+        let e = world.spawn((Label::new(content), text_layout()));
         set_parent(world, e, parent);
         proj.entities.insert(key.to_string(), e);
         e
     };
+    // A bare label is not measured, so the Count line never receives a rect.
+    world.insert(entity, text_layout());
     world.insert(
         entity,
         GraphemeNode {
@@ -304,6 +307,10 @@ fn project_button(
     props.enabled = enabled;
     let ui_id = proj.ui_id_for(key);
     let handle = Button::mount(world, parent, ui_id, props)?;
+    // The control mounts at Fill width. Inside a Hug row that width measures
+    // as padding only, so the label wraps down a few dozen pixels ("In",
+    // "A 5"). Hug the whole control so it sizes to the label.
+    hug_width(world, handle.root);
     proj.entities.insert(key.to_string(), handle.root);
     world.insert(
         handle.root,
@@ -409,6 +416,32 @@ fn event_action_id(
                 .map(|action| action.id.as_str())
         })
         .map(str::to_string)
+}
+
+fn text_layout() -> Layout {
+    Layout {
+        width: Size::Hug,
+        height: Size::Hug,
+        ..Layout::column()
+    }
+}
+
+/// `set_parent` does not change width. Fill children of a Hug parent measure
+/// as empty, so walk the subtree and hug each layout.
+fn hug_width(world: &mut World, entity: Entity) {
+    if let Some(layout) = world.get_mut::<Layout>(entity) {
+        layout.width = Size::Hug;
+    }
+    // Wrap inside a width that is still being solved clips the second word
+    // ("Load feed" paints as "Load"). The control is hugged to the label, so
+    // the full string stays on one line.
+    if let Some(label) = world.get_mut::<Label>(entity) {
+        label.overflow = TextOverflow::Visible;
+    }
+    let children = children_of(world, entity);
+    for child in children {
+        hug_width(world, child);
+    }
 }
 
 fn json_to_label(value: &JsonValue) -> String {
