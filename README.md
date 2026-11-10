@@ -69,10 +69,18 @@ Manual checklist when a display is available:
 4. Click Increment again, then Add 5. The label becomes `Count: 7 (doubled: 14)`.
 5. Close the window. The process exits.
 
+## Accessibility
+
+After layout, every projected button is an `AccessRole::Button` in `rndr_core::access_tree`, and every projected text node is an `AccessRole::Label`. The role comes from the rndr widget (`Button`, `Label`), and `GraphemeNode.role` repeats the View IR role on the same entity. `cargo test -p grapheme-ui --test access` checks both, including after a click changes the label.
+
+`Column` and `Row` keep `GraphemeNode.role = "group"` and also carry `CollectionAccess` with `AccessRole::Group`. That marker does not make the group focusable, so it is not a tab stop. `rndr_core::access_tree` is unconditional. Publishing that tree to the operating system needs the `accesskit` feature on `rndr_render`, which the desktop feature enables. This check does not open a window.
+
+`expose:` actions (key `expose/Increment`) are session entry points, not widgets. Every `click` action key is in the projected set.
+
 ## Catalog (v1)
 
 Projects View IR primitives `Column`, `Row`, `Text`, and `Button` onto rndr layouts / labels / `rndr_ui::controls::Button`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.
 
 ## Status
 
-Vertical slice: headless mount of `CounterApp`, projected node keys/roles, surface invoke parity with the headless Grapheme session, and a desktop runner that drains real button activations. The rndr facade re-export (model B) stays deferred. Accessibility identity against rndr's access tree is next.
+Vertical slice: headless mount of `CounterApp`, projected node keys/roles, surface invoke parity with the headless Grapheme session, a desktop runner that drains real button activations, and an access-tree check that buttons and labels keep rndr's roles. The rndr facade re-export (model B) stays deferred. An embed demo (rndr host mounts a Grapheme surface) is next.

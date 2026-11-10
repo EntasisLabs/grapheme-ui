@@ -2,7 +2,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use rndr_core::{Axis, Entity, Label, Layout, Size, World, despawn, set_parent};
+use rndr_core::{
+    AccessRole, Axis, CollectionAccess, Entity, Label, Layout, Size, World, despawn, set_parent,
+};
 use rndr_ui::controls::{Button, ButtonProps, HostIntent, host_intent};
 use rndr_ui::{UiId, UiPlugin};
 use serde_json::Value as JsonValue;
@@ -180,6 +182,17 @@ fn project_group(
         GraphemeNode {
             key: key.to_string(),
             role: role.or_else(|| Some("group".into())),
+        },
+    );
+    // Layout groups are not focusable. CollectionAccess publishes
+    // AccessRole::Group without adding a tab stop.
+    world.insert(
+        entity,
+        CollectionAccess {
+            role: AccessRole::Group,
+            expanded: None,
+            level: None,
+            parent: None,
         },
     );
     if let Some(children) = node.get("children").and_then(JsonValue::as_array) {
