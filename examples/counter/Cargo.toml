@@ -1,0 +1,15 @@
+[package]
+name = "counter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "counter"
+path = "src/main.rs"
+
+[dependencies]
+grapheme-ui = { workspace = true }
+rndr_core = { workspace = true }
+serde_json = { workspace = true }

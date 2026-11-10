@@ -1,0 +1,23 @@
+[package]
+name = "grapheme-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Bridge from Grapheme View IR to rndr: full apps and embeddable surfaces"
+readme = "../../README.md"
+keywords = ["grapheme", "rndr", "ui", "view-ir"]
+categories = ["gui"]
+
+[dependencies]
+grapheme-sdk = { workspace = true }
+grapheme-runtime = { workspace = true }
+rndr_core = { workspace = true }
+rndr_ui = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

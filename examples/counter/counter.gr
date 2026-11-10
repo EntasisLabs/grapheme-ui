@@ -1,0 +1,28 @@
+// RFC-0007 vertical slice: counter UI glyph for GraphemeUI on rndr.
+state Counter {
+  count: Int = 0
+  derive double: Int = $count * 2
+}
+
+mutation Increment on Counter {
+  apply { count: $count + 1 }
+}
+
+mutation Add($by: Int) on Counter {
+  apply { count: $count + $by }
+}
+
+view CounterView on Counter {
+  Column(gap: 8) {
+    value: Text("Count: {$count} (doubled: {$double})")
+    actions: Row(gap: 4) {
+      increment: Button(label: "Increment") { on click: Increment }
+      add_five: Button(label: "Add 5") { on click: Add(by: 5) }
+    }
+  }
+}
+
+glyph CounterApp on Counter {
+  expose Increment
+  CounterView
+}

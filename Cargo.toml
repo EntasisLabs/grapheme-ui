@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = ["crates/grapheme-ui", "examples/counter"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/EntasisLabs/grapheme-ui"
+rust-version = "1.95"
+
+[workspace.dependencies]
+grapheme-ui = { path = "crates/grapheme-ui", version = "0.1.0" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+
+# Language runtime: View IR + headless app session (RFC-0007). No renderer.
+# Pin the Part H branch until it lands on main; then retarget to main/tag.
+grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/rfc0007-ui-glyphs-3588", default-features = false, features = ["slim"] }
+grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/rfc0007-ui-glyphs-3588" }
+
+# Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
+# the only crate that depends on both Grapheme and rndr. rndr never depends
+# on Grapheme; Grapheme never depends on rndr or this crate.
+rndr_core = { git = "https://github.com/EntasisLabs/rndr", package = "rndr_core" }
+rndr_ui = { git = "https://github.com/EntasisLabs/rndr", package = "rndr_ui" }
