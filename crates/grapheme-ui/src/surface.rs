@@ -116,20 +116,18 @@ impl GraphemeSurface {
         world: &mut World,
         id: &str,
     ) -> Result<StoreCommit, GraphemeUiError> {
-        let commit = self.session.invoke_action(id).map_err(|e| {
-            let msg = e.to_string();
-            if msg.contains("stale_action") {
-                GraphemeUiError::StaleAction(msg)
-            } else {
-                GraphemeUiError::Session(e)
-            }
-        })?;
+        let commit = self.session.invoke_action(id).map_err(map_session_error)?;
         self.sync(world)?;
         Ok(commit)
     }
 
-    /// Drain rndr action intents owned by this surface, invoke matching
-    /// Grapheme actions, and sync once at the end.
+    /// Drain rndr action intents owned by this surface.
+    ///
+    /// Each successful invoke is synced before the next id runs. A later id
+    /// can go stale when an earlier invoke rebinds that action (its epoch
+    /// moved). Syncing first keeps the widget tree and the command map on the
+    /// store, so a click after this error uses the new id. The same outcome
+    /// is stored as [`DrainStatus`] for hosts that drain from an Update system.
     pub fn drain_actions(
         &mut self,
         world: &mut World,
@@ -143,28 +141,27 @@ impl GraphemeSurface {
         let requests = take_action_intents_matching(world, |w, intent| {
             owned.contains_key(&intent.entity) && host_intent(w, intent).is_some()
         });
-        let mut commits = Vec::new();
         let mut ids = Vec::new();
         for request in &requests {
             if let Some(id) = project::resolve_command(world, &self.projection, request) {
                 ids.push(id);
             }
         }
+        let mut commits = Vec::new();
         for id in ids {
-            let commit = self.session.invoke_action(&id).map_err(|e| {
-                let msg = e.to_string();
-                if msg.contains("stale_action") {
-                    GraphemeUiError::StaleAction(msg)
-                } else {
-                    GraphemeUiError::Session(e)
+            match self.session.invoke_action(&id) {
+                Ok(commit) => {
+                    commits.push(commit);
+                    if let Err(err) = self.sync(world) {
+                        return record_drain(world, commits, Some(err));
+                    }
                 }
-            })?;
-            commits.push(commit);
+                Err(err) => {
+                    return record_drain(world, commits, Some(map_session_error(err)));
+                }
+            }
         }
-        if !commits.is_empty() {
-            self.sync(world)?;
-        }
-        Ok(commits)
+        record_drain(world, commits, None)
     }
 
     /// Current action list from the last snapshot.
@@ -206,55 +203,103 @@ pub fn install(app: &mut rndr_core::App) {
     project::ensure_ui_plugin(app);
 }
 
+/// Outcome of the latest [`GraphemeSurface::drain_actions`] call.
+///
+/// Hosts read this after Update. [`drain_installed`] writes it so a failed
+/// drain is visible without parsing stderr.
+#[derive(Clone, Debug, Default)]
+pub struct DrainStatus {
+    /// Commits applied by that drain, in order. Each one was synced.
+    pub commits: Vec<StoreCommit>,
+    /// Set when a queued action failed after the commits above were synced.
+    pub error: Option<String>,
+}
+
 /// One driven surface, stored as a UI-thread local so an Update system can
-/// take it out, drain intents, and put it back. One per world.
+/// take it out, drain intents, and put it back.
+///
+/// One surface per world. [`GraphemeSurface::drive`] refuses a second one.
 struct InstalledSurface(Option<GraphemeSurface>);
+
+/// Puts a taken surface back, including when the caller panics.
+struct RestoreDriven<'a> {
+    world: &'a mut World,
+    surface: Option<GraphemeSurface>,
+}
+
+impl Drop for RestoreDriven<'_> {
+    fn drop(&mut self) {
+        if let Some(surface) = self.surface.take() {
+            restore_driven(self.world, surface);
+        }
+    }
+}
 
 impl GraphemeSurface {
     /// Park this surface on `app` and drain its actions on every Update,
     /// after rndr has turned a pointer or keyboard activation into a host intent.
     ///
-    /// Calling this again replaces the parked surface. The drain system is
-    /// registered once.
-    pub fn drive(self, app: &mut App) {
-        let already = app.world().has_local::<InstalledSurface>();
-        app.world_mut().insert_local(InstalledSurface(Some(self)));
-        if !already {
-            app.add_system(Schedule::Update, drain_installed);
+    /// One surface per world. A second call returns [`GraphemeUiError::Usage`]
+    /// and drops the surface passed in; the one already parked stays.
+    ///
+    /// # Errors
+    ///
+    /// [`GraphemeUiError::Usage`] when a surface is already parked on `app`.
+    pub fn drive(self, app: &mut App) -> Result<(), GraphemeUiError> {
+        if app.world().has_local::<InstalledSurface>() {
+            return Err(GraphemeUiError::Usage(
+                "one GraphemeSurface per world; a surface is already parked".into(),
+            ));
         }
+        app.world_mut().insert_local(InstalledSurface(Some(self)));
+        app.world_mut().insert_resource(DrainStatus::default());
+        app.add_system(Schedule::Update, drain_installed);
+        Ok(())
     }
 }
 
 /// Update system installed by [`GraphemeSurface::drive`].
 ///
-/// No-op when the surface is not parked. Errors are printed; the surface
-/// stays parked so the next frame can try again.
+/// No-op when the surface is not parked. A failure is stored on
+/// [`DrainStatus`] and printed. The surface stays parked either way.
 pub fn drain_installed(world: &mut World) {
-    let Some(mut surface) = take_driven(world) else {
+    let Some(surface) = take_driven(world) else {
         return;
     };
+    let mut guard = RestoreDriven {
+        world,
+        surface: Some(surface),
+    };
+    let RestoreDriven { world, surface } = &mut guard;
+    let surface = surface.as_mut().expect("driven surface");
     if let Err(err) = surface.drain_actions(world) {
         eprintln!("grapheme-ui: {err}");
     }
-    restore_driven(world, surface);
 }
 
 /// Run `f` with the surface parked by [`GraphemeSurface::drive`].
 ///
 /// The surface is not in the world for the duration of `f`, so `f` may
-/// borrow `world` exclusively. Do not call [`GraphemeSurface::drive`] or
-/// [`drain_installed`] from `f`.
+/// borrow `world` exclusively. A drop guard puts the surface back if `f`
+/// panics. Do not call [`GraphemeSurface::drive`] or [`drain_installed`]
+/// from `f`.
 pub fn with_driven_surface<R>(
     world: &mut World,
     f: impl FnOnce(&mut GraphemeSurface, &mut World) -> R,
 ) -> Result<R, GraphemeUiError> {
-    let mut surface = take_driven(world).ok_or_else(|| {
+    let surface = take_driven(world).ok_or_else(|| {
         GraphemeUiError::Usage(
             "no driven GraphemeSurface; call GraphemeSurface::drive first".into(),
         )
     })?;
-    let result = f(&mut surface, world);
-    restore_driven(world, surface);
+    let mut guard = RestoreDriven {
+        world,
+        surface: Some(surface),
+    };
+    let result = {
+        let RestoreDriven { world, surface } = &mut guard;
+        f(surface.as_mut().expect("driven surface"), world)
+    };
     Ok(result)
 }
 
@@ -268,5 +313,29 @@ fn restore_driven(world: &mut World, surface: GraphemeSurface) {
     match world.local_mut::<InstalledSurface>() {
         Some(slot) => slot.0 = Some(surface),
         None => world.insert_local(InstalledSurface(Some(surface))),
+    }
+}
+
+fn map_session_error(err: grapheme_sdk::GraphemeSdkError) -> GraphemeUiError {
+    let msg = err.to_string();
+    if msg.contains("stale_action") {
+        GraphemeUiError::StaleAction(msg)
+    } else {
+        GraphemeUiError::Session(err)
+    }
+}
+
+fn record_drain(
+    world: &mut World,
+    commits: Vec<StoreCommit>,
+    error: Option<GraphemeUiError>,
+) -> Result<Vec<StoreCommit>, GraphemeUiError> {
+    world.insert_resource(DrainStatus {
+        commits: commits.clone(),
+        error: error.as_ref().map(ToString::to_string),
+    });
+    match error {
+        Some(err) => Err(err),
+        None => Ok(commits),
     }
 }

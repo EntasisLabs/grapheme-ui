@@ -25,6 +25,35 @@ jobs:
       - name: Format
         run: cargo fmt --all -- --check
       - name: Clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets -- -D warnings
       - name: Test
-        run: cargo test --workspace
+        run: cargo test --locked --workspace
+
+  # rust-version in Cargo.toml. Stable clippy above can be newer than this.
+  msrv:
+    name: msrv-1.95
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.95.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --locked --workspace
+
+  # Compiles the winit/wgpu runner. Does not open a window.
+  # The embed example is added to this command on the embed branch.
+  desktop:
+    name: desktop-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install window libraries
+        run: sudo apt-get update && sudo apt-get install -y pkg-config libxkbcommon-dev libwayland-dev libfontconfig1-dev
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy (desktop)
+        run: cargo clippy --locked -p grapheme-ui -p counter-desktop --all-targets --features desktop -- -D warnings

@@ -11,9 +11,17 @@ keywords = ["grapheme", "rndr", "ui", "view-ir"]
 categories = ["gui"]
 
 [features]
-# Native window. Pulls the rndr facade and the winit/wgpu runner.
+# Native window. Pulls the rndr facade and the winit/wgpu runner, with the
+# same text shaper and accessibility adapter a normal rndr app enables.
 # Default builds stay headless (rndr_core + rndr_ui only).
-desktop = ["dep:rndr", "dep:rndr_render"]
+desktop = [
+    "dep:rndr",
+    "dep:rndr_render",
+    "rndr/parley",
+    "rndr/accesskit",
+    "rndr_render/parley",
+    "rndr_render/accesskit",
+]
 
 [dependencies]
 grapheme-sdk = { workspace = true }
