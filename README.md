@@ -59,7 +59,10 @@ The `desktop` feature opens a real rndr window (`rndr` + `rndr_render`). Default
 
 ```sh
 cargo run -p counter-desktop --features desktop
+cargo run -p grapheme-ui-cli --features desktop -- run examples/feed-view.gr
 ```
+
+`grapheme-ui run <file.gr> [--glyph NAME]` compiles the file, mounts the only UI glyph (or the named one), and opens an rndr window titled with the glyph name. Compile failures print `file:line:col: message` when the compiler reports a position, and the process exits non-zero. The binary's default build does not link the GPU runner; pass `--features desktop` to open a window.
 
 Clicks take rndr's normal pointer path: the button emits `HostIntent::Command`, and an Update system calls `drain_actions`, which maps the token back to a Grapheme action id. The headless test `drain_click_matches_headless_session` drives that path with a synthetic pointer (no window) and checks the store against a pure Grapheme session.
 

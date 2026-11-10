@@ -1128,6 +1128,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "grapheme-ui-cli"
+version = "0.1.0"
+dependencies = [
+ "grapheme-ui",
+ "rndr_core",
+]
+
+[[package]]
 name = "half"
 version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

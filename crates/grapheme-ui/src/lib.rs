@@ -32,6 +32,7 @@
 pub mod desktop;
 mod engine;
 mod error;
+mod load;
 mod project;
 mod surface;
 
@@ -39,6 +40,7 @@ pub use engine::{
     CapabilityCall, CapabilityHost, HostCallError, ModuleRegistry, PolicyGuard, SurfaceBuilder,
 };
 pub use error::GraphemeUiError;
+pub use load::{Diagnostic, LoadError, LoadedProgram, format_diagnostic, load_path, load_str};
 pub use surface::{
     DrainStatus, GraphemeNode, GraphemeSurface, ProjectedNode, drain_installed, install,
     with_driven_surface,

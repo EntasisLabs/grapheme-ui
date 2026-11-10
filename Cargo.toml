@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/grapheme-ui",
+    "crates/grapheme-ui-cli",
     "examples/counter",
     "examples/counter-desktop",
     "examples/embed",
