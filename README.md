@@ -73,7 +73,7 @@ Manual checklist when a display is available:
 
 After layout, every projected button is an `AccessRole::Button` in `rndr_core::access_tree`, and every projected text node is an `AccessRole::Label`. The role comes from the rndr widget (`Button`, `Label`), and `GraphemeNode.role` repeats the View IR role on the same entity. `cargo test -p grapheme-ui --test access` checks both, including after a click changes the label.
 
-`Column` and `Row` keep `GraphemeNode.role = "group"`. rndr flattens layout containers that have no access role of their own, so those groups are not `AccessRole::Group`. Marking them focusable would add a tab stop the glyph did not declare. Platform AccessKit is an `rndr_render` feature; this check uses the headless tree that feature publishes and does not open a window.
+`Column` and `Row` keep `GraphemeNode.role = "group"` and also carry `CollectionAccess` with `AccessRole::Group`. That marker does not make the group focusable, so it is not a tab stop. `rndr_core::access_tree` is unconditional. Publishing that tree to the operating system needs the `accesskit` feature on `rndr_render`, which the desktop feature enables. This check does not open a window.
 
 `expose:` actions (key `expose/Increment`) are session entry points, not widgets. Every `click` action key is in the projected set.
 
