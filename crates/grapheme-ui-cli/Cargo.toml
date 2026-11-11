@@ -8,7 +8,7 @@ description = "Open a Grapheme UI glyph in a desktop window"
 
 [features]
 # Winit/wgpu window. Default `cargo test` does not enable this.
-desktop = ["grapheme-ui/desktop", "dep:rndr_core"]
+desktop = ["grapheme-ui/desktop"]
 
 [[bin]]
 name = "grapheme-ui"
@@ -16,4 +16,3 @@ path = "src/main.rs"
 
 [dependencies]
 grapheme-ui = { workspace = true }
-rndr_core = { workspace = true, optional = true }

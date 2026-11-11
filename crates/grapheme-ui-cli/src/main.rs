@@ -132,32 +132,7 @@ fn launch(_loaded: LoadedProgram) -> Result<(), CliError> {
 
 #[cfg(feature = "desktop")]
 fn launch(loaded: LoadedProgram) -> Result<(), CliError> {
-    use grapheme_ui::{GraphemeSurface, install};
-    use rndr_core::{App, Layout, LogicalSize, Size, WindowConfig};
-
-    let mut app = App::new();
-    install(&mut app);
-    app.world_mut().insert_resource(WindowConfig {
-        title: loaded.glyph.clone(),
-        size: LogicalSize::new(520.0, 640.0),
-        min_size: Some(LogicalSize::new(320.0, 240.0)),
-        ..WindowConfig::default()
-    });
-    let parent = app.world_mut().spawn((Layout {
-        padding: 24.0,
-        gap: 8.0,
-        width: Size::Fill,
-        height: Size::Fill,
-        ..Layout::column()
-    },));
-    let surface =
-        GraphemeSurface::mount(app.world_mut(), parent, &loaded.source, Some(&loaded.glyph))
-            .map_err(|err| CliError::Message(err.to_string()))?;
-    surface
-        .drive(&mut app)
-        .map_err(|err| CliError::Message(err.to_string()))?;
-    grapheme_ui::desktop::run(app);
-    Ok(())
+    grapheme_ui::desktop::run_program(&loaded).map_err(|err| CliError::Message(err.to_string()))
 }
 
 #[cfg(test)]
