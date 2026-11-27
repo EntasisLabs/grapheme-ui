@@ -21,6 +21,10 @@ pub(crate) struct Projection {
     pub entities: HashMap<String, Entity>,
     /// Node key → stable UiId (unique under its parent for Button::mount).
     ui_ids: HashMap<String, u64>,
+    /// Node key → catalog element projected there (`Button`, `Spacer`, …).
+    /// View IR keys are positional, so a reload that inserts or removes an
+    /// element can move a different kind of element onto a key.
+    kinds: HashMap<String, String>,
     next_ui: u64,
     /// HostIntent::Command token → Grapheme action id for this sync.
     pub commands: HashMap<u64, String>,
@@ -34,6 +38,7 @@ impl Projection {
         Self {
             entities: HashMap::new(),
             ui_ids: HashMap::new(),
+            kinds: HashMap::new(),
             next_ui: 1,
             commands: HashMap::new(),
             next_cmd: 1,
@@ -48,6 +53,34 @@ impl Projection {
             id
         });
         UiId(id)
+    }
+
+    /// Forget `key` and every key under it, despawning their entities.
+    ///
+    /// Used when the element at `key` changes kind: the old widget (and its
+    /// children) cannot be updated into the new one, so the next projection
+    /// spawns fresh entities and a fresh UiId.
+    fn evict_subtree(&mut self, world: &mut World, key: &str) {
+        let prefix = format!("{key}/");
+        let keys: Vec<String> = self
+            .entities
+            .keys()
+            .chain(self.ui_ids.keys())
+            .chain(self.kinds.keys())
+            .filter(|k| k.as_str() == key || k.starts_with(&prefix))
+            .cloned()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+        for k in keys {
+            if let Some(entity) = self.entities.remove(&k)
+                && world.is_alive(entity)
+            {
+                despawn(world, entity);
+            }
+            self.ui_ids.remove(&k);
+            self.kinds.remove(&k);
+        }
     }
 
     fn command_for(&mut self, action_id: &str) -> u64 {
@@ -108,6 +141,7 @@ pub(crate) fn project_tree(
             }
         }
         proj.ui_ids.remove(&key);
+        proj.kinds.remove(&key);
     }
     Ok(entity)
 }
@@ -267,6 +301,10 @@ fn project_node(
                 "primitive '{prim}' is not in the GraphemeUI v1 catalog"
             )));
         };
+        if proj.kinds.get(&key).is_some_and(|kind| kind != prim) {
+            proj.evict_subtree(world, &key);
+        }
+        proj.kinds.insert(key.clone(), prim.to_string());
         (widget.project)(world, parent, &key, role, node, actions, proj, seen)
     } else if node.get("$view").is_some() {
         // Inlined view reference: the evaluated tree already has $prim on the

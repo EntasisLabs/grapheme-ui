@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Reload no longer reuses a widget whose element changed.** View IR keys are positional, so a reload that inserted an element (say a `Spacer` before a `Button`) moved the button onto a new key and left the old button at the old key, showing two buttons. The projection now records which catalog element sits at each key; when that changes, it despawns the old widget and its subtree and mounts the new one with a fresh UiId.
+
 ## [0.3.0] - 2026-11-27
 
 Depends on **grapheme 0.11.0** (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.6.0**. Hosts that link grapheme 0.10 must move to 0.11 with this release.
