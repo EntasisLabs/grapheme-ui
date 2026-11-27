@@ -57,6 +57,13 @@ fn feed_after_typing_ir() {
 }
 
 #[test]
+fn settings_ir() {
+    let mut ui = support::settings();
+    ui.force_theme(false).unwrap();
+    ui.assert_ir_golden(golden("settings.json")).unwrap();
+}
+
+#[test]
 fn ir_golden_accepts_a_crlf_checkout() {
     if std::env::var("UPDATE_GOLDENS").ok().as_deref() == Some("1") {
         return;
@@ -116,5 +123,19 @@ mod png {
         super::support::feed_after_typing()
             .assert_png_golden(golden("feed-after-typing.png"))
             .unwrap();
+    }
+
+    #[test]
+    fn settings_light_png() {
+        let mut ui = super::support::settings();
+        ui.force_theme(false).unwrap();
+        ui.assert_png_golden(golden("settings-light.png")).unwrap();
+    }
+
+    #[test]
+    fn settings_dark_png() {
+        let mut ui = super::support::settings();
+        ui.force_theme(true).unwrap();
+        ui.assert_png_golden(golden("settings-dark.png")).unwrap();
     }
 }

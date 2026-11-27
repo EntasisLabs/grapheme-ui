@@ -23,13 +23,16 @@ thiserror = "1"
 notify = "6.1.1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
-# Pinned to the unpublished M8 branch for diagnostic spans and
-# StoreSession::reload. Publish grapheme first, then retarget these to the
-# crates.io release, then publish grapheme-ui, then grapheme-cli.
+# Caret ranges so dependents can unify a compatible 0.11.x / 0.5.x.
+# grapheme 0.11.0 is the first release that type-checks `style { }`
+# (RFC-0007 C.5) and records it as renderer-free View IR, and the first
+# with diagnostic spans and `StoreSession::reload` (RFC-0007 A.9). Cargo.lock pins
+# the release this workspace tests. grapheme-artifact 0.5.0 comes in
+# transitively.
 # grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
 # its default `stage-b` feature does not pull grapheme-aot-container.
-grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/m8-dev-loop-6029", default-features = false, features = ["slim"] }
-grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/m8-dev-loop-6029", default-features = false }
+grapheme-sdk = { version = "0.11.0", default-features = false, features = ["slim"] }
+grapheme-runtime = { version = "0.11.0", default-features = false }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends

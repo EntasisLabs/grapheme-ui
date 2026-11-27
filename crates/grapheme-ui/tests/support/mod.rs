@@ -1,9 +1,15 @@
 //! Shared mounts for the harness and golden tests.
+#![allow(dead_code)]
 
 use grapheme_ui::testing::{Harness, Key};
 
 const COUNTER: &str = include_str!("../../../../examples/counter/counter.gr");
 const FEED: &str = include_str!("../../../../examples/feed-view.gr");
+const SETTINGS: &str = include_str!("settings.gr");
+
+pub fn settings() -> Harness {
+    Harness::mount(SETTINGS, Some("SettingsApp")).expect("mount settings")
+}
 
 pub fn counter_initial() -> Harness {
     Harness::mount(COUNTER, Some("CounterApp")).expect("mount counter")

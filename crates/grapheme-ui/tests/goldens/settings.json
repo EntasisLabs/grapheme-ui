@@ -1,0 +1,172 @@
+{
+  "$prim": "Column",
+  "children": [
+    {
+      "$prim": "Text",
+      "key": "SettingsView/title",
+      "props": {
+        "content": "Settings",
+        "style": {
+          "color": {
+            "$role": "text"
+          },
+          "size": 22,
+          "weight": "semibold"
+        }
+      },
+      "role": "text"
+    },
+    {
+      "$prim": "Text",
+      "key": "SettingsView/hint",
+      "props": {
+        "content": "Appearance follows the system",
+        "style": {
+          "color": {
+            "$role": "text_secondary"
+          },
+          "size": 13
+        }
+      },
+      "role": "text"
+    },
+    {
+      "$prim": "Row",
+      "children": [
+        {
+          "$prim": "Text",
+          "key": "SettingsView/row/label",
+          "props": {
+            "content": "Name",
+            "style": {
+              "color": {
+                "$role": "text"
+              },
+              "size": 14
+            }
+          },
+          "role": "text"
+        },
+        {
+          "$prim": "Spacer",
+          "key": "SettingsView/row/gap",
+          "role": "presentation"
+        },
+        {
+          "$prim": "Button",
+          "events": {
+            "click": {
+              "$action": "Save",
+              "args": {},
+              "id": "SettingsView/row/save#click@1"
+            }
+          },
+          "key": "SettingsView/row/save",
+          "props": {
+            "label": "Save",
+            "style": {
+              "disabled": {
+                "fill": {
+                  "$role": "disabled"
+                }
+              },
+              "fill": {
+                "$role": "accent"
+              },
+              "focused": {
+                "fill": {
+                  "$role": "selection"
+                }
+              },
+              "hover": {
+                "fill": {
+                  "$role": "hover"
+                }
+              },
+              "padding": {
+                "bottom": 6,
+                "left": 12,
+                "right": 12,
+                "top": 6
+              },
+              "pressed": {
+                "fill": {
+                  "$role": "pressed"
+                }
+              }
+            }
+          },
+          "role": "button"
+        }
+      ],
+      "key": "SettingsView/row",
+      "props": {
+        "style": {
+          "align": "center",
+          "gap": 8,
+          "width": "fill"
+        }
+      },
+      "role": "group"
+    },
+    {
+      "$prim": "Stack",
+      "children": [
+        {
+          "$prim": "Column",
+          "key": "SettingsView/badge/plate",
+          "props": {
+            "style": {
+              "fill": {
+                "$role": "selection"
+              },
+              "height": "fill",
+              "width": "fill"
+            }
+          },
+          "role": "group"
+        },
+        {
+          "$prim": "Text",
+          "key": "SettingsView/badge/caption",
+          "props": {
+            "content": "Preview",
+            "style": {
+              "color": {
+                "$role": "accent"
+              },
+              "size": 13
+            }
+          },
+          "role": "text"
+        }
+      ],
+      "key": "SettingsView/badge",
+      "props": {
+        "style": {
+          "height": 36,
+          "width": 160
+        }
+      },
+      "role": "group"
+    }
+  ],
+  "key": "SettingsView",
+  "props": {
+    "style": {
+      "fill": {
+        "$role": "bg"
+      },
+      "gap": 12,
+      "height": "fill",
+      "padding": {
+        "bottom": 20,
+        "left": 24,
+        "right": 24,
+        "top": 20
+      },
+      "width": "fill"
+    }
+  },
+  "role": "group"
+}

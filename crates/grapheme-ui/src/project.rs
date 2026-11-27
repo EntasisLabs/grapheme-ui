@@ -12,6 +12,7 @@ use rndr_ui::{UiId, UiPlugin};
 use serde_json::Value as JsonValue;
 
 use crate::error::GraphemeUiError;
+use crate::style;
 use crate::surface::{GraphemeNode, ProjectedNode};
 
 /// Bookkeeping for one projected tree under a surface root.
@@ -75,6 +76,23 @@ pub(crate) fn project_tree(
     proj.text_changes.clear();
     let mut seen = HashSet::new();
     let entity = project_node(world, parent, root, actions, proj, &mut seen)?;
+    // A Hug host slot (the surface root) would otherwise give `height: fill`
+    // nothing to fill, and the clip would be empty. Pass fill up one level
+    // so it reaches the viewport. Hug roots stay hug, which keeps an
+    // unstyled counter the same size.
+    if let (Some(child), Some(host)) = (
+        world.get::<Layout>(entity).copied(),
+        world.get::<Layout>(parent).copied(),
+    ) {
+        let mut host = host;
+        if matches!(child.height, Size::Fill) {
+            host.height = Size::Fill;
+        }
+        if matches!(child.width, Size::Fill) {
+            host.width = Size::Fill;
+        }
+        world.insert(parent, host);
+    }
     // Drop entities whose keys disappeared this revision.
     let stale: Vec<_> = proj
         .entities
@@ -113,8 +131,8 @@ struct CatalogWidget {
 /// Widgets this crate can draw, keyed by the element name in the catalog.
 ///
 /// `Divider` is not in `catalog/v1.json`. A host that adds it to a catalog
-/// document gets a separator label without a compiler change. The v1 document
-/// still lists only Column, Row, Text, Button and TextField.
+/// document gets a separator label without a compiler change. `Spacer` and
+/// `Stack` are in the v1 document; the compiler does not know them by name.
 const WIDGETS: &[CatalogWidget] = &[
     CatalogWidget {
         name: "Column",
@@ -123,6 +141,14 @@ const WIDGETS: &[CatalogWidget] = &[
     CatalogWidget {
         name: "Row",
         project: project_row,
+    },
+    CatalogWidget {
+        name: "Stack",
+        project: project_stack,
+    },
+    CatalogWidget {
+        name: "Spacer",
+        project: project_spacer,
     },
     CatalogWidget {
         name: "Text",
@@ -154,7 +180,7 @@ fn project_column(
     seen: &mut HashSet<String>,
 ) -> Result<Entity, GraphemeUiError> {
     project_group(
-        world, parent, key, role, "Column", node, actions, proj, seen,
+        world, parent, key, role, "Column", node, actions, proj, seen, false,
     )
 }
 
@@ -169,7 +195,9 @@ fn project_row(
     proj: &mut Projection,
     seen: &mut HashSet<String>,
 ) -> Result<Entity, GraphemeUiError> {
-    project_group(world, parent, key, role, "Row", node, actions, proj, seen)
+    project_group(
+        world, parent, key, role, "Row", node, actions, proj, seen, false,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -248,13 +276,75 @@ fn project_node(
         }
         // Fallback: project first child or empty group.
         project_group(
-            world, parent, &key, role, "Column", node, actions, proj, seen,
+            world, parent, &key, role, "Column", node, actions, proj, seen, false,
         )
     } else {
         Err(GraphemeUiError::Unsupported(format!(
             "node '{key}' has neither $prim nor $view"
         )))
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_stack(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    project_group(
+        world, parent, key, role, "Stack", node, actions, proj, seen, true,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_spacer(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    _actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    _seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    let axis = style::parent_axis(world, parent);
+    let layout = match axis {
+        Axis::Row => Layout {
+            width: Size::Fill,
+            height: Size::Hug,
+            ..Layout::row()
+        },
+        Axis::Column => Layout {
+            width: Size::Hug,
+            height: Size::Fill,
+            ..Layout::column()
+        },
+    };
+    let entity = if let Some(&existing) = proj.entities.get(key) {
+        world.insert(existing, layout);
+        existing
+    } else {
+        let entity = world.spawn((layout,));
+        set_parent(world, entity, parent);
+        proj.entities.insert(key.to_string(), entity);
+        entity
+    };
+    let authored = style::read(node)?;
+    style::sync_box(world, entity, &authored);
+    style::sync_paint(world, entity, &authored);
+    world.insert(
+        entity,
+        GraphemeNode {
+            key: key.to_string(),
+            role: role.or_else(|| Some("presentation".into())),
+        },
+    );
+    Ok(entity)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -268,6 +358,7 @@ fn project_group(
     actions: &[grapheme_runtime::ViewAction],
     proj: &mut Projection,
     seen: &mut HashSet<String>,
+    overlay: bool,
 ) -> Result<Entity, GraphemeUiError> {
     let gap = node
         .pointer("/props/gap")
@@ -278,27 +369,27 @@ fn project_group(
     } else {
         Axis::Column
     };
+    let layout = Layout {
+        axis,
+        gap,
+        padding: 0.0,
+        width: Size::Hug,
+        height: Size::Hug,
+        min_width: 0.0,
+        min_height: 0.0,
+    };
     let entity = if let Some(&existing) = proj.entities.get(key) {
-        if let Some(layout) = world.get_mut::<Layout>(existing) {
-            layout.axis = axis;
-            layout.gap = gap;
-        }
+        world.insert(existing, layout);
         existing
     } else {
-        let layout = Layout {
-            axis,
-            gap,
-            padding: 0.0,
-            width: Size::Hug,
-            height: Size::Hug,
-            min_width: 0.0,
-            min_height: 0.0,
-        };
-        let e = world.spawn((layout,));
-        set_parent(world, e, parent);
-        proj.entities.insert(key.to_string(), e);
-        e
+        let entity = world.spawn((layout,));
+        set_parent(world, entity, parent);
+        proj.entities.insert(key.to_string(), entity);
+        entity
     };
+    let authored = style::read(node)?;
+    style::sync_box(world, entity, &authored);
+    style::sync_paint(world, entity, &authored);
     world.insert(
         entity,
         GraphemeNode {
@@ -326,6 +417,9 @@ fn project_group(
         // is. An `if` that turns on, or a `for` whose keys reorder, would
         // otherwise paint in insertion order rather than source order.
         order_children(world, entity, &order);
+        if overlay {
+            style::pin_overlay(world, &order);
+        }
     }
     Ok(entity)
 }
@@ -384,6 +478,9 @@ fn project_divider(
         proj.entities.insert(key.to_string(), e);
         e
     };
+    let authored = style::read(node)?;
+    style::sync_box(world, entity, &authored);
+    style::sync_paint(world, entity, &authored);
     world.insert(
         entity,
         GraphemeNode {
@@ -419,6 +516,9 @@ fn project_text(
     };
     // A bare label is not measured, so the Count line never receives a rect.
     world.insert(entity, text_layout());
+    let authored = style::read(node)?;
+    style::sync_box(world, entity, &authored);
+    style::sync_paint(world, entity, &authored);
     world.insert(
         entity,
         GraphemeNode {
@@ -470,6 +570,10 @@ fn project_button(
     // as padding only, so the label wraps down a few dozen pixels ("In",
     // "A 5"). Hug the whole control so it sizes to the label.
     hug_width(world, handle.root);
+    let authored = style::read(node)?;
+    if let Some(face) = style::button_face(world, handle.label) {
+        style::sync_button(world, handle.root, face, handle.label, enabled, &authored);
+    }
     proj.entities.insert(key.to_string(), handle.root);
     world.insert(
         handle.root,
@@ -557,6 +661,9 @@ fn project_text_field(
     if let Some(action_id) = event_action_id(node, actions, key, "change") {
         proj.text_changes.insert(entity, action_id);
     }
+    let authored = style::read(node)?;
+    style::sync_box(world, entity, &authored);
+    style::sync_paint(world, entity, &authored);
     Ok(entity)
 }
 
