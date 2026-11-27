@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-27
+
+Depends on **grapheme 0.11.0** (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.6.0**. Hosts that link grapheme 0.10 must move to 0.11 with this release.
+
 ### Added
 
-- **Layout and style.** View `style { }` (width, height, min, max, padding, gap, align, justify, fill, text color, font size, weight) projects onto rndr `Layout` and rndr_ui theme tokens. Light and dark follow the OS appearance; tests can force either. Button `hover`, `pressed`, `focused` and `disabled` blocks restyle that button. Catalog primitives `Spacer` and `Stack` (overlay) ship in `catalog/v1.json`.
+- **Layout and style.** View `style { }` (width, height, min, max, padding, gap, align, justify, fill, text color, font size, weight) projects onto rndr `Layout` and rndr_ui theme tokens. Light and dark follow the OS appearance; tests can force either. Button `hover`, `pressed`, `focused` and `disabled` blocks restyle that button. Catalog primitives `Spacer` and `Stack` (overlay) ship in `catalog/v1.json`. (#17)
+- **Reload in place.** `GraphemeSurface::reload_source` recompiles a program into the running session through grapheme's `StoreSession::reload` (RFC-0007 A.9): plain fields keep their values, transient fields reset, and a running task is cancelled. A program that does not compile leaves the last good tree up and shows an in-window overlay (`ERROR_OVERLAY_KEY`) with the file, line, column and message; the next good reload clears it. `testing::Harness::reload_source` does the same headlessly. (#18)
+- **`desktop::dev_file`.** Opens a `.gr` file and reloads it in place on save; the window wakes within one file-watch event. (#18)
+
+### Changed
+
+- **Diagnostics come from grapheme's source spans.** `load` reads line and column from grapheme 0.11's structured diagnostics instead of parsing them out of the error text. (#18)
+- **grapheme 0.11.0 from crates.io.** Was 0.10.0.
 
 ## [0.2.0] - 2026-11-27
 
