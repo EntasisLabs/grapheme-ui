@@ -27,8 +27,11 @@ thiserror = "1"
 # grapheme-artifact 0.5.0 comes in transitively.
 # grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
 # its default `stage-b` feature does not pull grapheme-aot-container.
-grapheme-sdk = { version = "0.9.0", default-features = false, features = ["slim"] }
-grapheme-runtime = { version = "0.9.0", default-features = false }
+# Git branch until the catalog hook is published. Then switch back to
+# crates.io `0.9` (or the release that contains `element_catalog`) and drop
+# the `git` / `branch` keys. Publish grapheme first, then this crate.
+grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/element-catalog-hook-165b", version = "0.9.0", default-features = false, features = ["slim"] }
+grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/element-catalog-hook-165b", version = "0.9.0", default-features = false }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends

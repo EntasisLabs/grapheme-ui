@@ -36,6 +36,8 @@ pub struct SurfaceBuilder {
     host_factory: Option<HostFactory>,
     interceptor: Option<Interceptor>,
     registry: Option<RegistryHook>,
+    /// Catalog document. `None` uses [`crate::catalog::V1`].
+    catalog: Option<String>,
 }
 
 impl Default for SurfaceBuilder {
@@ -52,6 +54,7 @@ impl SurfaceBuilder {
             host_factory: None,
             interceptor: None,
             registry: None,
+            catalog: None,
         }
     }
 
@@ -91,8 +94,19 @@ impl SurfaceBuilder {
         self
     }
 
-    pub(crate) fn engine(self) -> GraphemeEngine {
-        let mut builder = GraphemeEngine::builder();
+    /// Replace `catalog/v1.json` for this surface's compile.
+    ///
+    /// `json` is a data-only catalog document (`$catalog`, elements, props,
+    /// prop types, events, payload params). Widgets are still dispatched by
+    /// element name in this crate. An invalid document fails [`Self::mount`].
+    pub fn element_catalog(mut self, json: impl Into<String>) -> Self {
+        self.catalog = Some(json.into());
+        self
+    }
+
+    pub(crate) fn engine(self) -> Result<GraphemeEngine, crate::GraphemeUiError> {
+        let mut builder = GraphemeEngine::builder()
+            .element_catalog(self.catalog.as_deref().unwrap_or(crate::catalog::V1))?;
         if let Some(guard) = self.policy_guard {
             builder = builder.with_policy_guard(guard);
         }
@@ -105,6 +119,6 @@ impl SurfaceBuilder {
         if let Some(configure) = self.registry {
             builder = builder.configure_module_registry(configure);
         }
-        builder.build()
+        Ok(builder.build())
     }
 }
