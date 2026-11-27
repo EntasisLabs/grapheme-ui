@@ -237,6 +237,104 @@ impl Harness {
         self.click(&key)
     }
 
+    /// Move the pointer to the center of `key_suffix` without pressing, then settle.
+    ///
+    /// The next frame's button `hover` block sees this position.
+    pub fn hover(&mut self, key_suffix: &str) -> Result<(), GraphemeUiError> {
+        let at = self.center_of(key_suffix)?;
+        {
+            let pointer = &mut self.input_mut()?.pointer;
+            pointer.position = at;
+            pointer.pressed = false;
+            pointer.down = false;
+            pointer.released = false;
+            pointer.press_at = None;
+        }
+        self.settle()
+    }
+
+    /// Press the left button at the center of `key_suffix` and leave it down.
+    ///
+    /// One frame runs so a button `pressed` block is painted. Call
+    /// [`Harness::click_at`] or [`Harness::hover`] to release it.
+    pub fn hold(&mut self, key_suffix: &str) -> Result<(), GraphemeUiError> {
+        let at = self.center_of(key_suffix)?;
+        self.pointer_down(at, true)?;
+        self.app.update();
+        Ok(())
+    }
+
+    /// Focus `key_suffix` without moving the pointer, then paint one frame.
+    pub fn focus_node(&mut self, key_suffix: &str) -> Result<(), GraphemeUiError> {
+        let entity = self.entity(key_suffix)?;
+        self.app.world_mut().insert_resource(Focus {
+            entity: Some(entity),
+        });
+        self.app.update();
+        Ok(())
+    }
+
+    /// Paint light or dark regardless of the OS appearance, then settle.
+    pub fn force_theme(&mut self, dark: bool) -> Result<(), GraphemeUiError> {
+        let appearance = if dark {
+            rndr_ui::Appearance::Dark
+        } else {
+            rndr_ui::Appearance::Light
+        };
+        self.app
+            .world_mut()
+            .insert_resource(crate::style::ForcedAppearance(appearance));
+        self.settle()
+    }
+
+    /// Publish the OS dark preference (`None` is no preference) and settle.
+    ///
+    /// [`Harness::force_theme`] wins over this until the process drops the
+    /// harness. A fresh harness follows the OS.
+    pub fn os_dark(&mut self, dark: Option<bool>) -> Result<(), GraphemeUiError> {
+        rndr_core::publish_system_appearance(
+            self.app.world_mut(),
+            rndr_core::SystemAppearance {
+                dark,
+                accent: None,
+                reduced_motion: false,
+            },
+        );
+        self.settle()
+    }
+
+    /// sRGB channels of the fill painted for `key_suffix`.
+    ///
+    /// A button reports its face. Other nodes report their own fill.
+    pub fn fill_rgba(&mut self, key_suffix: &str) -> Result<[f32; 4], GraphemeUiError> {
+        self.settle()?;
+        let entity = self.entity(key_suffix)?;
+        let color = crate::style::fill_of(self.app.world(), entity)
+            .ok_or_else(|| GraphemeUiError::Usage(format!("no fill on {key_suffix}")))?;
+        Ok([color.r, color.g, color.b, color.a])
+    }
+
+    /// sRGB channels of a theme role in the light or dark palette.
+    ///
+    /// `role` is a Grapheme theme role (`bg`, `text`, `text_secondary`, `accent`, …).
+    pub fn theme_rgba(role: &str, dark: bool) -> Result<[f32; 4], GraphemeUiError> {
+        crate::style::theme_channels(role, dark)
+    }
+
+    /// sRGB channels of the text colour painted for `key_suffix`.
+    pub fn ink_rgba(&mut self, key_suffix: &str) -> Result<[f32; 4], GraphemeUiError> {
+        self.settle()?;
+        let entity = self.entity(key_suffix)?;
+        let color = crate::style::ink_of(self.app.world(), entity)
+            .ok_or_else(|| GraphemeUiError::Usage(format!("no text color on {key_suffix}")))?;
+        Ok([color.r, color.g, color.b, color.a])
+    }
+
+    fn center_of(&mut self, key_suffix: &str) -> Result<[f32; 2], GraphemeUiError> {
+        let rect = self.rect_entry(key_suffix)?;
+        Ok([rect.x + rect.w * 0.5, rect.y + rect.h * 0.5])
+    }
+
     /// Press and release at a point in viewport space, then settle.
     pub fn click_at(&mut self, at: [f32; 2]) -> Result<(), GraphemeUiError> {
         self.pointer_down(at, true)?;

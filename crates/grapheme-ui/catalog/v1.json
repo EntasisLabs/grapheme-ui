@@ -58,6 +58,22 @@
           "payload": [{ "name": "value", "type": "String" }]
         }
       ]
+    },
+    {
+      "name": "Spacer",
+      "role": "presentation",
+      "content": false,
+      "children": false,
+      "props": [],
+      "events": []
+    },
+    {
+      "name": "Stack",
+      "role": "group",
+      "content": false,
+      "children": true,
+      "props": [],
+      "events": []
     }
   ]
 }

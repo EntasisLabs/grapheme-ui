@@ -332,6 +332,7 @@ impl GraphemeSurface {
 /// Install [`rndr_ui::UiPlugin`] on an [`rndr_core::App`] (idempotent).
 pub fn install(app: &mut rndr_core::App) {
     project::ensure_ui_plugin(app);
+    crate::style::install(app);
 }
 
 /// Outcome of the latest [`GraphemeSurface::drain_actions`] call.

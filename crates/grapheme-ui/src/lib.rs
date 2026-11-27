@@ -41,6 +41,7 @@ mod engine;
 mod error;
 mod load;
 mod project;
+mod style;
 mod surface;
 pub mod testing;
 
