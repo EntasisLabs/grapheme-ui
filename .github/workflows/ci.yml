@@ -56,3 +56,35 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Clippy (desktop)
         run: cargo clippy --locked -p grapheme-ui -p grapheme-ui-cli -p counter-desktop -p embed --all-targets --features desktop -- -D warnings
+
+  # PNG goldens need a software adapter. IR goldens run in the check job on
+  # every OS; this job is the only one that links rndr_render's observe feature.
+  png-goldens:
+    name: png-goldens-linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Install lavapipe and window libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libxkbcommon-dev \
+            libwayland-dev \
+            mesa-vulkan-drivers \
+            libvulkan1
+          icd=$(find /usr/share/vulkan/icd.d -name 'lvp_icd*.json' | head -1)
+          test -n "$icd"
+          echo "VK_DRIVER_FILES=$icd" >> "$GITHUB_ENV"
+          echo "VK_ICD_FILENAMES=$icd" >> "$GITHUB_ENV"
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy (capture)
+        run: cargo clippy --locked -p grapheme-ui --all-targets --features capture -- -D warnings
+      - name: PNG goldens
+        env:
+          WGPU_BACKEND: vulkan
+          GOLDEN_REQUIRE_SOFTWARE: "1"
+        run: cargo test --locked -p grapheme-ui --features capture --test goldens -- --test-threads=1

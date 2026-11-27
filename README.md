@@ -93,6 +93,24 @@ cargo test -p embed
 
 `cargo run -p embed --features desktop` opens the same shell in a window (needs a display). rndr apps depend on grapheme-ui; rndr itself does not.
 
+## UI harness and goldens
+
+[`grapheme_ui::testing::Harness`](crates/grapheme-ui/src/testing.rs) mounts a `.gr` file with no window. It drives an action, a synthetic pointer click, or a key, then reads the View IR, the access tree, and laid-out rects. [`Harness::settle`](crates/grapheme-ui/src/testing.rs) runs frames until the View IR repeats. That is the wait a later worker-thread session uses; today the session runs on the calling thread.
+
+```sh
+cargo test -p grapheme-ui --test harness --test goldens
+UPDATE_GOLDENS=1 cargo test -p grapheme-ui --test goldens
+```
+
+`crates/grapheme-ui/tests/goldens/` holds a View IR JSON file for the counter and feed-view examples in three states: initial, after a click, and after typing. Those JSON files are compared on every OS. The matching PNGs are offscreen frames from `rndr_render::capture` (the `capture` feature, which turns on rndr's `observe` feature). A channel may differ by 16 (override with `GOLDEN_PIXEL_TOLERANCE`). CI compares the PNGs on Linux with lavapipe. Generate them the same way:
+
+```sh
+# Point VK_DRIVER_FILES at the lavapipe ICD first.
+UPDATE_GOLDENS=1 WGPU_BACKEND=vulkan cargo test -p grapheme-ui --features capture --test goldens -- --test-threads=1
+```
+
+Do not combine `capture` with `desktop` for that run. `desktop` enables Parley, and the goldens are the builtin text engine.
+
 ## Catalog (v1)
 
 Projects View IR primitives `Column`, `Row`, `Text`, `Button`, and `TextField` onto rndr layouts, labels, `rndr_ui::controls::Button`, and `rndr_core::TextField`. A `TextField` `change` is drained with payload `{ "value": "…" }`. Unknown primitives are rejected. The compiler’s built-in catalog stays the source of signatures until GraphemeUI publishes them as loadable modules.

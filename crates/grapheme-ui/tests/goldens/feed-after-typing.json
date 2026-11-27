@@ -1,0 +1,53 @@
+{
+  "$prim": "Column",
+  "children": [
+    {
+      "$prim": "Text",
+      "key": "FeedView/header",
+      "props": {
+        "content": "Feed (0 likes)"
+      },
+      "role": "text"
+    },
+    {
+      "$prim": "TextField",
+      "events": {
+        "change": {
+          "$action": "Search",
+          "args": {},
+          "id": "FeedView/search#change@1",
+          "payload_params": [
+            "value"
+          ]
+        }
+      },
+      "key": "FeedView/search",
+      "props": {
+        "label": "Search",
+        "placeholder": "Search posts",
+        "value": "Hello"
+      },
+      "role": "textbox"
+    },
+    {
+      "$prim": "Button",
+      "events": {
+        "click": {
+          "$action": "LoadFeed",
+          "args": {},
+          "id": "FeedView/$if/0#click@1"
+        }
+      },
+      "key": "FeedView/$if/0",
+      "props": {
+        "label": "Load feed"
+      },
+      "role": "button"
+    }
+  ],
+  "key": "FeedView",
+  "props": {
+    "gap": 8
+  },
+  "role": "group"
+}
