@@ -5,7 +5,7 @@ use grapheme_ui::{GraphemeSurface, install};
 use rndr_core::{App, Layout, Size, access_id, access_tree};
 use serde_json::{Value as JsonValue, json};
 
-const V1: &str = include_str!("../../../catalog/v1.json");
+const V1: &str = include_str!("../catalog/v1.json");
 
 const SOURCE: &str = r#"
 state S { n: Int = 0 }
