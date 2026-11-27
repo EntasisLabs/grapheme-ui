@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
 use grapheme_sdk::GraphemeStoreSession;
 
+use crate::bridge::{SessionBridge, WorkerEvent};
 use crate::engine::SurfaceBuilder;
 use rndr_core::{
     App, Entity, Layout, Schedule, Size, TextChanged, World, events, set_parent,
@@ -44,7 +45,9 @@ pub struct ProjectedNode {
 /// - **Full app:** the window's root content is a surface.
 /// - **Embed:** an rndr component hosts the surface as a child.
 pub struct GraphemeSurface {
-    session: GraphemeStoreSession,
+    /// Store session, on a worker thread. The UI thread sends actions and
+    /// applies the snapshots that come back.
+    bridge: SessionBridge,
     glyph: String,
     /// Host-owned container under the caller's parent.
     root: Entity,
@@ -85,6 +88,7 @@ impl SurfaceBuilder {
         let engine = self.engine()?;
         let mut session = engine.store_session(source)?;
         let snapshot = session.mount(glyph)?;
+        let bridge = SessionBridge::spawn(session)?;
         let root = world.spawn((Layout {
             width: Size::Fill,
             height: Size::Hug,
@@ -92,7 +96,7 @@ impl SurfaceBuilder {
         },));
         set_parent(world, root, parent);
         let mut surface = GraphemeSurface {
-            session,
+            bridge,
             glyph: snapshot.glyph.clone(),
             root,
             projection: Projection::new(),
@@ -120,13 +124,26 @@ impl GraphemeSurface {
     }
 
     /// Store session for headless `invoke` / `query` alongside the surface.
+    ///
+    /// The session normally lives on the surface's worker thread. This checks
+    /// it out onto the caller, waiting until any in-flight invoke finishes.
+    /// The next [`Self::drain_actions`], [`Self::invoke_action`], or
+    /// [`Self::sync`] sends it back.
     pub fn session(&mut self) -> &mut GraphemeStoreSession {
-        &mut self.session
+        self.bridge
+            .checkout()
+            .expect("grapheme session thread stopped")
     }
 
     /// Re-evaluate the glyph and reconcile rndr entities with View IR.
+    ///
+    /// While a task is in flight this returns the snapshot already projected
+    /// for the latest commit, so a caller does not block on the capability.
     pub fn sync(&mut self, world: &mut World) -> Result<&AppSnapshot, GraphemeUiError> {
-        let snapshot = self.session.app_snapshot()?;
+        if self.bridge.inflight() {
+            return Ok(self.last.as_ref().expect("mounted before sync"));
+        }
+        let snapshot = self.bridge.current_snapshot()?;
         self.project_snapshot(world, snapshot)?;
         Ok(self.last.as_ref().expect("just projected"))
     }
@@ -139,18 +156,22 @@ impl GraphemeSurface {
     /// Invoke a Grapheme action id (same path a button click uses), then sync.
     ///
     /// Passes no payload. An action that requires one fails the same way a
-    /// headless session does.
+    /// headless session does. The call blocks until the action finishes,
+    /// including a task capability. Each task `apply` is projected onto
+    /// `world` before the task continues. The frame loop should use
+    /// [`Self::drain_actions`] instead, which returns while a capability runs
+    /// so the window can paint.
     pub fn invoke_action(
         &mut self,
         world: &mut World,
         id: &str,
     ) -> Result<StoreCommit, GraphemeUiError> {
-        let commit = self
-            .session
-            .invoke_action(id, None)
-            .map_err(map_session_error)?;
-        self.sync(world)?;
-        Ok(commit)
+        self.finish_queued(world)?;
+        self.bridge.enqueue(id.to_string(), None);
+        let mut commits = self.finish_queued(world)?;
+        commits
+            .pop()
+            .ok_or_else(|| GraphemeUiError::Usage(format!("invoke produced no commit for '{id}'")))
     }
 
     /// Drain rndr action intents owned by this surface.
@@ -162,10 +183,65 @@ impl GraphemeSurface {
     /// moved). Syncing first keeps the widget tree and the command map on the
     /// store, so a click after this error uses the new id. The same outcome
     /// is stored as [`DrainStatus`] for hosts that drain from an Update system.
+    ///
+    /// Invokes run on the surface's session thread, one at a time. A click
+    /// that arrives while a task is running is queued and starts only after
+    /// that task finishes (it is not dropped and it does not run beside it).
+    /// The queued value is the action id resolved when the intent was drained.
+    /// If an earlier invoke rebinds that id, the queued invoke fails with
+    /// [`GraphemeUiError::StaleAction`] and [`DrainStatus`] records the error
+    /// the same way two intents in one frame do.
+    ///
+    /// A task `apply` is projected and this call returns before the task
+    /// continues, so the frame can paint that commit (the `Loading…` state)
+    /// while a later capability is still running. The next Update acknowledges
+    /// the step and the task proceeds. A mutation, which commits once, still
+    /// finishes inside this call.
     pub fn drain_actions(
         &mut self,
         world: &mut World,
     ) -> Result<Vec<StoreCommit>, GraphemeUiError> {
+        self.bridge.ensure_checked_in()?;
+        self.bridge.prepare_frame();
+        for (id, payload) in self.collect_jobs(world) {
+            self.bridge.enqueue(id, payload);
+        }
+        let mut commits = Vec::new();
+        let outcome = loop {
+            if let Err(err) = self.bridge.dispatch() {
+                break Err(err);
+            }
+            if !self.bridge.has_work() {
+                break Ok(());
+            }
+            let Some(event) = self.bridge.poll_frame_event()? else {
+                break Ok(());
+            };
+            match event {
+                WorkerEvent::Step(snapshot) => {
+                    if let Err(err) = self.project_snapshot(world, snapshot) {
+                        break Err(err);
+                    }
+                    self.bridge.defer_ack();
+                    break Ok(());
+                }
+                WorkerEvent::Done { result, snapshot } => {
+                    if let Some(snapshot) = snapshot
+                        && let Err(err) = self.project_snapshot(world, snapshot)
+                    {
+                        break Err(err);
+                    }
+                    match result {
+                        Ok(commit) => commits.push(commit),
+                        Err(err) => break Err(map_session_error(err)),
+                    }
+                }
+            }
+        };
+        record_drain(world, commits, outcome.err())
+    }
+
+    fn collect_jobs(&self, world: &mut World) -> Vec<(String, Option<JsonValue>)> {
         let owned: HashMap<Entity, ()> = self
             .projection
             .entities
@@ -186,21 +262,37 @@ impl GraphemeSurface {
                 jobs.push((id, None));
             }
         }
+        jobs
+    }
+
+    /// Run queued and in-flight invokes to completion, acknowledging task
+    /// steps immediately. This is the synchronous [`Self::invoke_action`] path.
+    fn finish_queued(&mut self, world: &mut World) -> Result<Vec<StoreCommit>, GraphemeUiError> {
+        self.bridge.ensure_checked_in()?;
+        self.bridge.ack_now();
         let mut commits = Vec::new();
-        for (id, payload) in jobs {
-            match self.session.invoke_action(&id, payload) {
-                Ok(commit) => {
-                    commits.push(commit);
-                    if let Err(err) = self.sync(world) {
-                        return record_drain(world, commits, Some(err));
-                    }
+        loop {
+            self.bridge.dispatch()?;
+            if !self.bridge.has_work() {
+                break;
+            }
+            match self.bridge.recv_worker_event()? {
+                WorkerEvent::Step(snapshot) => {
+                    self.project_snapshot(world, snapshot)?;
+                    self.bridge.release_worker();
                 }
-                Err(err) => {
-                    return record_drain(world, commits, Some(map_session_error(err)));
+                WorkerEvent::Done { result, snapshot } => {
+                    if let Some(snapshot) = snapshot {
+                        self.project_snapshot(world, snapshot)?;
+                    }
+                    match result {
+                        Ok(commit) => commits.push(commit),
+                        Err(err) => return Err(map_session_error(err)),
+                    }
                 }
             }
         }
-        record_drain(world, commits, None)
+        Ok(commits)
     }
 
     /// Current action list from the last snapshot.

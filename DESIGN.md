@@ -36,6 +36,10 @@ Not in scope: per-frame Grapheme scripting of rndr (RFC-0007 non-goal).
 
 Native click and headless invoke therefore share one codepath.
 
+The store session lives on a worker thread the surface owns. The UI thread sends action ids and payloads and applies the snapshots that come back. `drain_actions` runs from Update and does not wait inside a capability, so a task can paint each `apply` before it finishes. The runtime hook is `StoreSession::set_commit_observer` (no renderer types; see EntasisLabs/grapheme#50). Publish that grapheme change before this crate. Until it is on crates.io, grapheme-ui pins the commit by git.
+
+A click that arrives while a task is running is queued and runs after that task, in order. It is not dropped and it does not run in parallel. The queued value is the action id from when the intent was drained. If an earlier invoke rebinds it, the queued invoke fails with `stale_action` and `DrainStatus` records that the same way two intents in one frame do.
+
 ## Catalog ownership
 
 RFC-0007: the primitive catalog is owned by GraphemeUI. `catalog/v1.json` is that document (`$catalog` is `grapheme-ui/v1`). Every compile in `load` and `engine` passes it to `GraphemeEngine::builder().element_catalog`. The compiler checks element names, props, prop types, events and payload params. It does not render.
