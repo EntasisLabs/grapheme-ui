@@ -76,9 +76,9 @@ fn unknown_element_names_the_catalog_and_has_a_position() {
 }
 
 #[test]
-fn type_error_has_no_position() {
+fn type_error_has_a_line_and_column() {
     // TextField `change` supplies String. The SDK reports the mismatch as a
-    // type error without a source position.
+    // type error with a source span; the loader does not scrape the message.
     let err = load_str(
         r#"
 state S { n: Int = 0 }
@@ -98,9 +98,12 @@ glyph App on S { V }
         "{}",
         diagnostic.message
     );
+    assert_eq!(diagnostic.line, Some(5), "{diagnostic:?}");
+    assert!(diagnostic.column.is_some(), "{diagnostic:?}");
+    let rendered = err.to_string();
     assert!(
-        diagnostic.line.is_none() && diagnostic.column.is_none(),
-        "type errors from the SDK have no position: {diagnostic:?}"
+        rendered.starts_with("typed.gr:5:"),
+        "formatted diagnostic should lead with the file and line: {rendered}"
     );
 }
 

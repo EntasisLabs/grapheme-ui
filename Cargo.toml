@@ -20,18 +20,16 @@ grapheme-ui = { path = "crates/grapheme-ui", version = "0.2.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
+notify = "6.1.1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
-# Caret ranges so dependents can unify a compatible 0.10.x / 0.5.x.
-# grapheme 0.10.0 is the first release with the data-only element catalog
-# hook (`GraphemeEngine::builder().element_catalog`) and
-# `StoreSession::set_commit_observer`, which lets a task apply be painted
-# before the task returns. Cargo.lock pins the release this workspace tests.
-# grapheme-artifact 0.5.0 comes in transitively.
+# Pinned to the unpublished M8 branch for diagnostic spans and
+# StoreSession::reload. Publish grapheme first, then retarget these to the
+# crates.io release, then publish grapheme-ui, then grapheme-cli.
 # grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
 # its default `stage-b` feature does not pull grapheme-aot-container.
-grapheme-sdk = { version = "0.10.0", default-features = false, features = ["slim"] }
-grapheme-runtime = { version = "0.10.0", default-features = false }
+grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/m8-dev-loop-6029", default-features = false, features = ["slim"] }
+grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/m8-dev-loop-6029", default-features = false }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends

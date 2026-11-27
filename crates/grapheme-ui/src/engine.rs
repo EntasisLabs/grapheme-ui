@@ -104,6 +104,12 @@ impl SurfaceBuilder {
         self
     }
 
+    pub(crate) fn catalog_document(&self) -> String {
+        self.catalog
+            .clone()
+            .unwrap_or_else(|| crate::catalog::V1.to_string())
+    }
+
     pub(crate) fn engine(self) -> Result<GraphemeEngine, crate::GraphemeUiError> {
         let mut builder = GraphemeEngine::builder()
             .element_catalog(self.catalog.as_deref().unwrap_or(crate::catalog::V1))?;

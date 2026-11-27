@@ -10,10 +10,9 @@ use grapheme_sdk::{GraphemeEngine, GraphemeSdkError};
 
 /// One compile or load failure.
 ///
-/// `line` and `column` are set when the compiler message carries a position.
-/// Parse errors use pest's `--> line:column`. Unknown elements and props do
-/// too, and they name the catalog (`grapheme-ui/v1` for [`load_str`]). Other
-/// type errors still have no position.
+/// `line` and `column` come from the SDK's structured diagnostic span for
+/// parse and type errors. They are absent for I/O failures and for errors
+/// the compiler cannot locate.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Diagnostic {
     /// Compiler or I/O message, unchanged.
@@ -123,38 +122,11 @@ impl LoadError {
 }
 
 fn from_sdk(err: &GraphemeSdkError, path: Option<&Path>) -> Diagnostic {
-    let message = err.to_string();
-    let (line, column) = line_col(&message);
+    let span = err.diagnostics().into_iter().find_map(|diag| diag.span);
     Diagnostic {
-        message,
+        message: err.to_string(),
         file: path.map(|path| path.display().to_string()),
-        line,
-        column,
-    }
-}
-
-/// Pull `line:column` out of a compiler message.
-///
-/// pest prints `--> 1:5` or `--> file.gr:1:5`. Catalog errors use the same
-/// `--> line:column` tail. Other type errors have neither.
-fn line_col(message: &str) -> (Option<u32>, Option<u32>) {
-    let Some(rest) = message.split("-->").nth(1) else {
-        return (None, None);
-    };
-    let token = rest
-        .split_whitespace()
-        .next()
-        .unwrap_or("")
-        .trim_end_matches(':');
-    let mut parts: Vec<&str> = token.rsplitn(3, ':').collect();
-    parts.reverse();
-    if parts.len() < 2 {
-        return (None, None);
-    }
-    let column = parts.pop().and_then(|text| text.parse().ok());
-    let line = parts.pop().and_then(|text| text.parse().ok());
-    match (line, column) {
-        (Some(line), Some(column)) => (Some(line), Some(column)),
-        _ => (None, None),
+        line: span.as_ref().map(|span| span.line),
+        column: span.map(|span| span.column),
     }
 }

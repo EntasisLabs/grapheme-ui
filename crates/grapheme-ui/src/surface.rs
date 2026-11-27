@@ -2,14 +2,17 @@
 
 use std::collections::HashMap;
 
+use std::path::Path;
+
 use grapheme_runtime::{AppSnapshot, StoreCommit, ViewAction};
-use grapheme_sdk::GraphemeStoreSession;
+use grapheme_sdk::{GraphemeEngine, GraphemeSdkError, GraphemeStoreSession};
 
 use crate::bridge::{SessionBridge, WorkerEvent};
 use crate::engine::SurfaceBuilder;
+use crate::load::{Diagnostic, format_diagnostic};
 use rndr_core::{
-    App, Entity, Layout, Schedule, Size, TextChanged, World, events, set_parent,
-    take_action_intents_matching,
+    App, Color, Entity, Label, Layout, Schedule, Semantics, Size, TextChanged, World, despawn,
+    events, set_parent, take_action_intents_matching,
 };
 use rndr_ui::controls::host_intent;
 use serde_json::{Value as JsonValue, json};
@@ -39,6 +42,9 @@ pub struct ProjectedNode {
     pub entity: Entity,
 }
 
+/// View IR key of the dev-loop error overlay. Not part of the program's tree.
+pub const ERROR_OVERLAY_KEY: &str = "__grapheme_error_overlay";
+
 /// A Grapheme UI glyph mounted under an rndr parent.
 ///
 /// Use this for both shapes in model A:
@@ -53,6 +59,10 @@ pub struct GraphemeSurface {
     root: Entity,
     projection: Projection,
     last: Option<AppSnapshot>,
+    /// Catalog document used to compile this surface, including reloads.
+    catalog: String,
+    /// Banner shown over the last good tree when a reload fails to compile.
+    overlay: Option<Entity>,
 }
 
 impl GraphemeSurface {
@@ -85,6 +95,7 @@ impl SurfaceBuilder {
         source: &str,
         glyph: Option<&str>,
     ) -> Result<GraphemeSurface, GraphemeUiError> {
+        let catalog = self.catalog_document();
         let engine = self.engine()?;
         let mut session = engine.store_session(source)?;
         let snapshot = session.mount(glyph)?;
@@ -101,6 +112,8 @@ impl SurfaceBuilder {
             root,
             projection: Projection::new(),
             last: None,
+            catalog,
+            overlay: None,
         };
         surface.project_snapshot(world, snapshot)?;
         Ok(surface)
@@ -133,6 +146,84 @@ impl GraphemeSurface {
         self.bridge
             .checkout()
             .expect("grapheme session thread stopped")
+    }
+
+    /// Recompile `source` and migrate the running session (RFC-0007 A.9).
+    ///
+    /// A compile failure leaves the last good tree in place and shows an
+    /// in-window overlay with `file`, line, column and the diagnostic.
+    /// The next successful save clears the overlay. `file` is the path named
+    /// on the overlay; it is not read.
+    pub fn reload_source(
+        &mut self,
+        world: &mut World,
+        source: &str,
+        file: Option<&Path>,
+    ) -> Result<(), GraphemeUiError> {
+        let engine = GraphemeEngine::builder()
+            .element_catalog(&self.catalog)?
+            .build();
+        match engine.compile_artifact(source) {
+            Ok(artifact) => {
+                self.session().reload(artifact)?;
+                self.clear_overlay(world);
+                if let Err(err) = self.sync(world) {
+                    self.show_overlay(
+                        world,
+                        &Diagnostic {
+                            message: err.to_string(),
+                            file: file.map(|path| path.display().to_string()),
+                            line: None,
+                            column: None,
+                        },
+                    );
+                }
+                Ok(())
+            }
+            Err(err) => {
+                let diagnostic = diagnostic_from_sdk(&err, file);
+                self.show_overlay(world, &diagnostic);
+                Ok(())
+            }
+        }
+    }
+
+    fn show_overlay(&mut self, world: &mut World, diagnostic: &Diagnostic) {
+        self.clear_overlay(world);
+        let text = format_diagnostic(diagnostic);
+        let entity = world.spawn((
+            Layout {
+                width: Size::Fill,
+                height: Size::Hug,
+                padding: 12.0,
+                ..Layout::column()
+            },
+            Color::rgb(0.45, 0.12, 0.14),
+            Label::new(text.clone()),
+            Semantics {
+                name: Some(text),
+                description: String::new(),
+                readonly: true,
+            },
+            GraphemeNode {
+                key: ERROR_OVERLAY_KEY.to_string(),
+                role: Some("text".into()),
+            },
+        ));
+        set_parent(world, entity, self.root);
+        self.projection
+            .entities
+            .insert(ERROR_OVERLAY_KEY.to_string(), entity);
+        self.overlay = Some(entity);
+    }
+
+    fn clear_overlay(&mut self, world: &mut World) {
+        self.projection.entities.remove(ERROR_OVERLAY_KEY);
+        if let Some(entity) = self.overlay.take()
+            && world.is_alive(entity)
+        {
+            despawn(world, entity);
+        }
     }
 
     /// Re-evaluate the glyph and reconcile rndr entities with View IR.
@@ -444,6 +535,16 @@ fn restore_driven(world: &mut World, surface: GraphemeSurface) {
     match world.local_mut::<InstalledSurface>() {
         Some(slot) => slot.0 = Some(surface),
         None => world.insert_local(InstalledSurface(Some(surface))),
+    }
+}
+
+fn diagnostic_from_sdk(err: &GraphemeSdkError, path: Option<&Path>) -> Diagnostic {
+    let span = err.diagnostics().into_iter().find_map(|diag| diag.span);
+    Diagnostic {
+        message: err.to_string(),
+        file: path.map(|path| path.display().to_string()),
+        line: span.as_ref().map(|span| span.line),
+        column: span.map(|span| span.column),
     }
 }
 
