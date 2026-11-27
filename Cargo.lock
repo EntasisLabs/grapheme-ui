@@ -1052,7 +1052,8 @@ dependencies = [
 [[package]]
 name = "grapheme-artifact"
 version = "0.5.0"
-source = "git+https://github.com/EntasisLabs/grapheme?branch=cursor%2Fstyle-layout-v1-064c#42ae15921d2da089a6d1a144ebb42aa1a0c59565"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0cba3f7600632ef601f30b3e6476688269b2b70c0a24505ad287e04c5cf6927"
 dependencies = [
  "hex",
  "serde",
@@ -1063,8 +1064,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-compiler"
-version = "0.10.0"
-source = "git+https://github.com/EntasisLabs/grapheme?branch=cursor%2Fstyle-layout-v1-064c#42ae15921d2da089a6d1a144ebb42aa1a0c59565"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de1634aca2acf0b364877f6edcde82db7614b026cd618ee148a25bd441545061"
 dependencies = [
  "grapheme-artifact",
  "grapheme-signatures",
@@ -1077,8 +1079,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-runtime"
-version = "0.10.0"
-source = "git+https://github.com/EntasisLabs/grapheme?branch=cursor%2Fstyle-layout-v1-064c#42ae15921d2da089a6d1a144ebb42aa1a0c59565"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4601ca02cc53a03f19dd33fd1688289c117fcd17e8ad7f9d160fc2834b661e0c"
 dependencies = [
  "grapheme-artifact",
  "grapheme-signatures",
@@ -1091,8 +1094,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-sdk"
-version = "0.10.0"
-source = "git+https://github.com/EntasisLabs/grapheme?branch=cursor%2Fstyle-layout-v1-064c#42ae15921d2da089a6d1a144ebb42aa1a0c59565"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b032e70969a3c670acf14a1d39ac49a30515f10c4adeefd18d9d06362e18a51"
 dependencies = [
  "grapheme-artifact",
  "grapheme-compiler",
@@ -1107,13 +1111,15 @@ dependencies = [
 
 [[package]]
 name = "grapheme-signatures"
-version = "0.10.0"
-source = "git+https://github.com/EntasisLabs/grapheme?branch=cursor%2Fstyle-layout-v1-064c#42ae15921d2da089a6d1a144ebb42aa1a0c59565"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdf218f6a2f12f5c72e209fbc77ef801b42f20eac09f3353cf974ffb7c63925e"
 
 [[package]]
 name = "grapheme-stdlib"
-version = "0.10.0"
-source = "git+https://github.com/EntasisLabs/grapheme?branch=cursor%2Fstyle-layout-v1-064c#42ae15921d2da089a6d1a144ebb42aa1a0c59565"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7c3ac637e34f5e44fb087203d60662afbd4c43b766e12c659d8056df0a8490b1"
 dependencies = [
  "serde_json",
 ]

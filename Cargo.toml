@@ -22,14 +22,15 @@ serde_json = "1"
 thiserror = "1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
-# Pinned to the grapheme branch that type-checks `style { }` (RFC-0007 C.5)
-# until that release is on crates.io. Publish grapheme first, point these
-# back at the published versions, then publish grapheme-ui, then grapheme-cli.
-# grapheme-cli must not depend on this git pin.
+# Caret ranges so dependents can unify a compatible 0.11.x / 0.5.x.
+# grapheme 0.11.0 is the first release that type-checks `style { }`
+# (RFC-0007 C.5) and records it as renderer-free View IR. Cargo.lock pins
+# the release this workspace tests. grapheme-artifact 0.5.0 comes in
+# transitively.
 # grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
 # its default `stage-b` feature does not pull grapheme-aot-container.
-grapheme-sdk = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/style-layout-v1-064c", default-features = false, features = ["slim"] }
-grapheme-runtime = { git = "https://github.com/EntasisLabs/grapheme", branch = "cursor/style-layout-v1-064c", default-features = false }
+grapheme-sdk = { version = "0.11.0", default-features = false, features = ["slim"] }
+grapheme-runtime = { version = "0.11.0", default-features = false }
 
 # Renderer: opt-in at the *application* Cargo.toml (model A). This bridge is
 # the only crate that depends on both Grapheme and rndr. rndr never depends
