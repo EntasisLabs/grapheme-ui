@@ -1,0 +1,2 @@
+crates/grapheme-ui/tests/goldens/*.json text eol=lf
+crates/grapheme-ui/tests/goldens/*.png binary
