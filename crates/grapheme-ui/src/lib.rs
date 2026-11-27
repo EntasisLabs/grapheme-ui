@@ -33,6 +33,7 @@
 
 #![deny(missing_docs)]
 
+mod catalog;
 #[cfg(feature = "desktop")]
 pub mod desktop;
 mod engine;

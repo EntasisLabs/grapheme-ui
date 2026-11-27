@@ -82,7 +82,7 @@ impl SurfaceBuilder {
         source: &str,
         glyph: Option<&str>,
     ) -> Result<GraphemeSurface, GraphemeUiError> {
-        let engine = self.engine();
+        let engine = self.engine()?;
         let mut session = engine.store_session(source)?;
         let snapshot = session.mount(glyph)?;
         let root = world.spawn((Layout {

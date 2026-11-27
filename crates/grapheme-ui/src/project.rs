@@ -94,6 +94,126 @@ pub(crate) fn project_tree(
     Ok(entity)
 }
 
+type ProjectFn = fn(
+    &mut World,
+    Entity,
+    &str,
+    Option<String>,
+    &JsonValue,
+    &[grapheme_runtime::ViewAction],
+    &mut Projection,
+    &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError>;
+
+struct CatalogWidget {
+    name: &'static str,
+    project: ProjectFn,
+}
+
+/// Widgets this crate can draw, keyed by the element name in the catalog.
+///
+/// `Divider` is not in `catalog/v1.json`. A host that adds it to a catalog
+/// document gets a separator label without a compiler change. The v1 document
+/// still lists only Column, Row, Text, Button and TextField.
+const WIDGETS: &[CatalogWidget] = &[
+    CatalogWidget {
+        name: "Column",
+        project: project_column,
+    },
+    CatalogWidget {
+        name: "Row",
+        project: project_row,
+    },
+    CatalogWidget {
+        name: "Text",
+        project: project_text_widget,
+    },
+    CatalogWidget {
+        name: "Button",
+        project: project_button_widget,
+    },
+    CatalogWidget {
+        name: "TextField",
+        project: project_text_field_widget,
+    },
+    CatalogWidget {
+        name: "Divider",
+        project: project_divider,
+    },
+];
+
+#[allow(clippy::too_many_arguments)]
+fn project_column(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    project_group(
+        world, parent, key, role, "Column", node, actions, proj, seen,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_row(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    project_group(world, parent, key, role, "Row", node, actions, proj, seen)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_text_widget(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    _actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    _seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    project_text(world, parent, key, role, node, proj)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_button_widget(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    _seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    project_button(world, parent, key, role, node, actions, proj)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_text_field_widget(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    _seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    project_text_field(world, parent, key, role, node, actions, proj)
+}
+
 fn project_node(
     world: &mut World,
     parent: Entity,
@@ -114,17 +234,12 @@ fn project_node(
         .map(str::to_string);
 
     if let Some(prim) = node.get("$prim").and_then(JsonValue::as_str) {
-        match prim {
-            "Column" | "Row" => {
-                project_group(world, parent, &key, role, prim, node, actions, proj, seen)
-            }
-            "Text" => project_text(world, parent, &key, role, node, proj),
-            "Button" => project_button(world, parent, &key, role, node, actions, proj),
-            "TextField" => project_text_field(world, parent, &key, role, node, actions, proj),
-            other => Err(GraphemeUiError::Unsupported(format!(
-                "primitive '{other}' is not in the GraphemeUI v1 catalog"
-            ))),
-        }
+        let Some(widget) = WIDGETS.iter().find(|widget| widget.name == prim) else {
+            return Err(GraphemeUiError::Unsupported(format!(
+                "primitive '{prim}' is not in the GraphemeUI v1 catalog"
+            )));
+        };
+        (widget.project)(world, parent, &key, role, node, actions, proj, seen)
     } else if node.get("$view").is_some() {
         // Inlined view reference: the evaluated tree already has $prim on the
         // same node (see StoreSession). If only $view remains, treat children.
@@ -233,6 +348,50 @@ fn order_children(world: &mut World, parent: Entity, order: &[Entity]) {
         }
     }
     children.list = next;
+}
+
+#[allow(clippy::too_many_arguments)]
+fn project_divider(
+    world: &mut World,
+    parent: Entity,
+    key: &str,
+    role: Option<String>,
+    node: &JsonValue,
+    _actions: &[grapheme_runtime::ViewAction],
+    proj: &mut Projection,
+    _seen: &mut HashSet<String>,
+) -> Result<Entity, GraphemeUiError> {
+    let text = node
+        .pointer("/props/label")
+        .and_then(JsonValue::as_str)
+        .filter(|label| !label.is_empty())
+        .unwrap_or("Divider")
+        .to_string();
+    let entity = if let Some(&existing) = proj.entities.get(key) {
+        if let Some(label) = world.get_mut::<Label>(existing) {
+            label.text = text;
+        }
+        existing
+    } else {
+        let layout = Layout {
+            width: Size::Fill,
+            height: Size::Hug,
+            min_height: 1.0,
+            ..Layout::column()
+        };
+        let e = world.spawn((Label::new(text), layout));
+        set_parent(world, e, parent);
+        proj.entities.insert(key.to_string(), e);
+        e
+    };
+    world.insert(
+        entity,
+        GraphemeNode {
+            key: key.to_string(),
+            role: role.or_else(|| Some("separator".into())),
+        },
+    );
+    Ok(entity)
 }
 
 fn project_text(
