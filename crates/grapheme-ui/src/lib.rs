@@ -16,7 +16,12 @@
 //!   (model A). A later optional rndr facade re-export is model B.
 //!
 //! The `desktop` feature adds the rndr window loop (`desktop::run`).
-//! Headless tests do not enable it.
+//! Headless tests do not enable it. The `capture` feature turns on
+//! offscreen PNG snapshots in [`testing`] (`rndr_render::capture`).
+//!
+//! [`testing::Harness`] mounts a `.gr` file without a window and drives it
+//! the way a click or keypress would. [`testing::Harness::settle`] is where
+//! a later worker-thread session waits for the next snapshot.
 //!
 //! # Surfaces
 //!
@@ -29,6 +34,7 @@
 #![deny(missing_docs)]
 
 mod bridge;
+mod catalog;
 #[cfg(feature = "desktop")]
 pub mod desktop;
 mod engine;
@@ -36,6 +42,7 @@ mod error;
 mod load;
 mod project;
 mod surface;
+pub mod testing;
 
 pub use engine::{
     CapabilityCall, CapabilityHost, HostCallError, ModuleRegistry, PolicyGuard, SurfaceBuilder,

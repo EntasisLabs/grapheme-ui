@@ -51,6 +51,31 @@ fn parse_error_keeps_line_and_column() {
 }
 
 #[test]
+fn unknown_element_names_the_catalog_and_has_a_position() {
+    let err = load_str(
+        "state S { n: Int = 0 }\nmutation Nop on S { apply { n: $n } }\nview V on S { Grid { Text(\"a\") } }\nglyph App on S { V }\n",
+        Some(Path::new("grid.gr")),
+        None,
+    )
+    .unwrap_err();
+    let diagnostic = &err.diagnostics[0];
+    assert!(
+        diagnostic.message.contains("unknown element 'Grid'")
+            && diagnostic.message.contains("catalog 'grapheme-ui/v1'"),
+        "{}",
+        diagnostic.message
+    );
+    assert_eq!(diagnostic.file.as_deref(), Some("grid.gr"));
+    assert_eq!(diagnostic.line, Some(3));
+    assert!(diagnostic.column.is_some(), "{diagnostic:?}");
+    let rendered = err.to_string();
+    assert!(
+        rendered.starts_with("grid.gr:3:"),
+        "formatted diagnostic should lead with the file and line: {rendered}"
+    );
+}
+
+#[test]
 fn type_error_has_no_position() {
     // TextField `change` supplies String. The SDK reports the mismatch as a
     // type error without a source position.

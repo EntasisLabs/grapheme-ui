@@ -1,0 +1,60 @@
+{
+  "$prim": "Column",
+  "children": [
+    {
+      "$prim": "Text",
+      "key": "CounterView/value",
+      "props": {
+        "content": "Count: 0 (doubled: 0)"
+      },
+      "role": "text"
+    },
+    {
+      "$prim": "Row",
+      "children": [
+        {
+          "$prim": "Button",
+          "events": {
+            "click": {
+              "$action": "Increment",
+              "args": {},
+              "id": "CounterView/actions/increment#click@1"
+            }
+          },
+          "key": "CounterView/actions/increment",
+          "props": {
+            "label": "Increment"
+          },
+          "role": "button"
+        },
+        {
+          "$prim": "Button",
+          "events": {
+            "click": {
+              "$action": "Add",
+              "args": {
+                "by": 5
+              },
+              "id": "CounterView/actions/add_five#click@1"
+            }
+          },
+          "key": "CounterView/actions/add_five",
+          "props": {
+            "label": "Add 5"
+          },
+          "role": "button"
+        }
+      ],
+      "key": "CounterView/actions",
+      "props": {
+        "gap": 4
+      },
+      "role": "group"
+    }
+  ],
+  "key": "CounterView",
+  "props": {
+    "gap": 8
+  },
+  "role": "group"
+}

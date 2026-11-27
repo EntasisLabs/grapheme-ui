@@ -10,8 +10,10 @@ use grapheme_sdk::{GraphemeEngine, GraphemeSdkError};
 
 /// One compile or load failure.
 ///
-/// `line` and `column` are set when the compiler message carries a position
-/// (parse errors do). Type errors from the current SDK do not.
+/// `line` and `column` are set when the compiler message carries a position.
+/// Parse errors use pest's `--> line:column`. Unknown elements and props do
+/// too, and they name the catalog (`grapheme-ui/v1` for [`load_str`]). Other
+/// type errors still have no position.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Diagnostic {
     /// Compiler or I/O message, unchanged.
@@ -80,7 +82,10 @@ pub fn load_str(
     path: Option<&Path>,
     glyph: Option<&str>,
 ) -> Result<LoadedProgram, LoadError> {
-    let engine = GraphemeEngine::builder().build();
+    let engine = GraphemeEngine::builder()
+        .element_catalog(crate::catalog::V1)
+        .map_err(|err| LoadError::one(from_sdk(&err, path)))?
+        .build();
     let mut session = engine
         .store_session(source)
         .map_err(|err| LoadError::one(from_sdk(&err, path)))?;
@@ -130,7 +135,8 @@ fn from_sdk(err: &GraphemeSdkError, path: Option<&Path>) -> Diagnostic {
 
 /// Pull `line:column` out of a compiler message.
 ///
-/// pest prints `--> 1:5` or `--> file.gr:1:5`. Type errors have neither.
+/// pest prints `--> 1:5` or `--> file.gr:1:5`. Catalog errors use the same
+/// `--> line:column` tail. Other type errors have neither.
 fn line_col(message: &str) -> (Option<u32>, Option<u32>) {
     let Some(rest) = message.split("-->").nth(1) else {
         return (None, None);

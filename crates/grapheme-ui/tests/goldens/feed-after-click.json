@@ -1,0 +1,108 @@
+{
+  "$prim": "Column",
+  "children": [
+    {
+      "$prim": "Text",
+      "key": "FeedView/header",
+      "props": {
+        "content": "Feed (0 likes)"
+      },
+      "role": "text"
+    },
+    {
+      "$prim": "TextField",
+      "events": {
+        "change": {
+          "$action": "Search",
+          "args": {},
+          "id": "FeedView/search#change@1",
+          "payload_params": [
+            "value"
+          ]
+        }
+      },
+      "key": "FeedView/search",
+      "props": {
+        "label": "Search",
+        "placeholder": "Search posts",
+        "value": ""
+      },
+      "role": "textbox"
+    },
+    {
+      "$prim": "Row",
+      "children": [
+        {
+          "$prim": "Text",
+          "key": "FeedView/$if3/$for/1/0/0",
+          "props": {
+            "content": "Hello Grapheme"
+          },
+          "role": "text"
+        },
+        {
+          "$prim": "Button",
+          "events": {
+            "click": {
+              "$action": "Like",
+              "args": {
+                "id": "1"
+              },
+              "id": "FeedView/$if3/$for/1/0/like#click@1"
+            }
+          },
+          "key": "FeedView/$if3/$for/1/0/like",
+          "props": {
+            "label": "Like"
+          },
+          "role": "button"
+        }
+      ],
+      "key": "FeedView/$if3/$for/1/0",
+      "props": {
+        "gap": 4
+      },
+      "role": "group"
+    },
+    {
+      "$prim": "Row",
+      "children": [
+        {
+          "$prim": "Text",
+          "key": "FeedView/$if3/$for/2/0/0",
+          "props": {
+            "content": "Store tasks land"
+          },
+          "role": "text"
+        },
+        {
+          "$prim": "Button",
+          "events": {
+            "click": {
+              "$action": "Like",
+              "args": {
+                "id": "2"
+              },
+              "id": "FeedView/$if3/$for/2/0/like#click@1"
+            }
+          },
+          "key": "FeedView/$if3/$for/2/0/like",
+          "props": {
+            "label": "Like"
+          },
+          "role": "button"
+        }
+      ],
+      "key": "FeedView/$if3/$for/2/0",
+      "props": {
+        "gap": 4
+      },
+      "role": "group"
+    }
+  ],
+  "key": "FeedView",
+  "props": {
+    "gap": 8
+  },
+  "role": "group"
+}

@@ -22,6 +22,10 @@ desktop = [
     "rndr_render/parley",
     "rndr_render/accesskit",
 ]
+# Offscreen PNG capture for golden tests. Uses rndr 0.6 `observe` and the
+# builtin text engine (no Parley), so pixels stay on the software adapter
+# instead of the desktop font backend. Default tests do not enable this.
+capture = ["dep:rndr_render", "rndr_render/observe", "dep:png"]
 
 [dependencies]
 grapheme-sdk = { workspace = true }
@@ -30,6 +34,7 @@ rndr_core = { workspace = true }
 rndr_ui = { workspace = true }
 rndr = { workspace = true, optional = true, default-features = false }
 rndr_render = { workspace = true, optional = true, default-features = false }
+png = { version = "0.18", optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

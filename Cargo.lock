@@ -982,13 +982,25 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "r-efi 5.3.0",
+ "wasip2",
+]
+
+[[package]]
+name = "getrandom"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
 dependencies = [
  "cfg-if",
  "libc",
- "r-efi",
+ "r-efi 6.0.0",
 ]
 
 [[package]]
@@ -1040,7 +1052,8 @@ dependencies = [
 [[package]]
 name = "grapheme-artifact"
 version = "0.5.0"
-source = "git+https://github.com/EntasisLabs/grapheme?rev=8b4482c22c0b1abd476413b1acd80b44e2a8f8fe#8b4482c22c0b1abd476413b1acd80b44e2a8f8fe"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0cba3f7600632ef601f30b3e6476688269b2b70c0a24505ad287e04c5cf6927"
 dependencies = [
  "hex",
  "serde",
@@ -1051,8 +1064,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-compiler"
-version = "0.9.0"
-source = "git+https://github.com/EntasisLabs/grapheme?rev=8b4482c22c0b1abd476413b1acd80b44e2a8f8fe#8b4482c22c0b1abd476413b1acd80b44e2a8f8fe"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ea5c558ade83606813e542c6aed65207be4c3c7038e093e195021815e137c23"
 dependencies = [
  "grapheme-artifact",
  "grapheme-signatures",
@@ -1065,8 +1079,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-runtime"
-version = "0.9.0"
-source = "git+https://github.com/EntasisLabs/grapheme?rev=8b4482c22c0b1abd476413b1acd80b44e2a8f8fe#8b4482c22c0b1abd476413b1acd80b44e2a8f8fe"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "93f5ea7f901c16eabfeff00866df39bd950fc56936ab96c935037d2b46e92b3c"
 dependencies = [
  "grapheme-artifact",
  "grapheme-signatures",
@@ -1079,8 +1094,9 @@ dependencies = [
 
 [[package]]
 name = "grapheme-sdk"
-version = "0.9.0"
-source = "git+https://github.com/EntasisLabs/grapheme?rev=8b4482c22c0b1abd476413b1acd80b44e2a8f8fe#8b4482c22c0b1abd476413b1acd80b44e2a8f8fe"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1d75992b54d0ae07f0db4582e7a33eba118ba7f7ec167ed3e0de8e6a5b3cf4a"
 dependencies = [
  "grapheme-artifact",
  "grapheme-compiler",
@@ -1095,13 +1111,15 @@ dependencies = [
 
 [[package]]
 name = "grapheme-signatures"
-version = "0.9.0"
-source = "git+https://github.com/EntasisLabs/grapheme?rev=8b4482c22c0b1abd476413b1acd80b44e2a8f8fe#8b4482c22c0b1abd476413b1acd80b44e2a8f8fe"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fd834b6930258c753752ccea89324b7db9ef42b2321b3cc0fe5284099c4bf5c"
 
 [[package]]
 name = "grapheme-stdlib"
-version = "0.9.0"
-source = "git+https://github.com/EntasisLabs/grapheme?rev=8b4482c22c0b1abd476413b1acd80b44e2a8f8fe#8b4482c22c0b1abd476413b1acd80b44e2a8f8fe"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ff964b5596781a81db72d2f0859f00542397fe9929015e37bd00aaec62b6649"
 dependencies = [
  "serde_json",
 ]
@@ -1112,6 +1130,7 @@ version = "0.1.0"
 dependencies = [
  "grapheme-runtime",
  "grapheme-sdk",
+ "png",
  "rndr",
  "rndr_core",
  "rndr_render",
@@ -1426,7 +1445,7 @@ version = "0.1.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c00acbd29eabad4a2392fa0e921c874934dbbf4194312ad20f04a0ed67a3cb3"
 dependencies = [
- "getrandom",
+ "getrandom 0.4.3",
  "libc",
 ]
 
@@ -2428,6 +2447,12 @@ dependencies = [
 
 [[package]]
 name = "r-efi"
+version = "5.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
+
+[[package]]
+name = "r-efi"
 version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
@@ -2523,9 +2548,9 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rndr"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfdb496c217dab5e819667fb69ae82a1d01771236692a10331de07c041345cc0"
+checksum = "6ac264109d0cd4b5d42a6d1d4381c185dcb575d80ac4e459de8a488f54550969"
 dependencies = [
  "rndr_core",
  "rndr_paint",
@@ -2535,9 +2560,9 @@ dependencies = [
 
 [[package]]
 name = "rndr_core"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9803f28d8fc0270cabe7e35f7b8a97935c3d86ce93ea2e967f45a29b2a2373ca"
+checksum = "8483ab1020d290ee992c59a1a3226c111e63318050702bb672fd000a00a54781"
 dependencies = [
  "pulldown-cmark",
  "unicode-segmentation",
@@ -2546,9 +2571,9 @@ dependencies = [
 
 [[package]]
 name = "rndr_paint"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2b99d328fa742878df9725abff89960108300eba67fc9169a4a80931b971ca9"
+checksum = "935e46ddb8d253db2d466d7b1db0e19713cc5a1bb9e78168cb61a49fcf121341"
 dependencies = [
  "lyon",
  "rndr_core",
@@ -2556,9 +2581,9 @@ dependencies = [
 
 [[package]]
 name = "rndr_render"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6cc2f5b75effaa0e12486849da746801f5ae1b2e763a801a2c2e9a7812285b"
+checksum = "cdc234b2b220e2b44a40de60c88fd8f52c77fb1b66a9c4eb0a8e1a29246f36d9"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -2567,6 +2592,7 @@ dependencies = [
  "arboard",
  "block2 0.5.1",
  "etagere",
+ "getrandom 0.3.4",
  "image-webp",
  "jpeg-decoder",
  "js-sys",
@@ -2579,6 +2605,7 @@ dependencies = [
  "pollster",
  "rndr_core",
  "rndr_paint",
+ "serde_json",
  "swash",
  "unicode-segmentation",
  "wasm-bindgen",
@@ -2595,18 +2622,18 @@ dependencies = [
 
 [[package]]
 name = "rndr_std"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d32168d9fb0338c3050ab44e1efb124b4b4e7670a09f2ee69d3dcbca749d4a0"
+checksum = "6b7f54d16d58fbebc236b3cfe89a0b21bddb4633b90987b070dd368eaf834431"
 dependencies = [
  "rndr_core",
 ]
 
 [[package]]
 name = "rndr_ui"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fba56ca4934a803afb631a5825e544d382a4da6cb4dcee937c35cbba3fdaa91a"
+checksum = "5e4d9e12305aefa48f346cf5353d50741c9400c910a2070b6213885e303c19f2"
 dependencies = [
  "rndr_core",
 ]
@@ -2966,7 +2993,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
@@ -3252,6 +3279,15 @@ checksum = "29790946404f91d9c5d06f9874efddea1dc06c5efe94541a7d6863108e3a5e4b"
 dependencies = [
  "same-file",
  "winapi-util",
+]
+
+[[package]]
+name = "wasip2"
+version = "1.0.4+wasi-0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b67efb37e106e55ce722a510d6b5f9c17f083e5fc79afc2badeb12cc313d9487"
+dependencies = [
+ "wit-bindgen",
 ]
 
 [[package]]
@@ -4084,6 +4120,12 @@ checksum = "8c3b93199df0ab874cdf0c6a94f0a0dc3423fe41f1cafb62b8bd7b1deb277aef"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "wit-bindgen"
+version = "0.57.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wl-clipboard-rs"
