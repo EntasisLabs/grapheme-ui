@@ -2529,9 +2529,9 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rndr"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfdb496c217dab5e819667fb69ae82a1d01771236692a10331de07c041345cc0"
+checksum = "6ac264109d0cd4b5d42a6d1d4381c185dcb575d80ac4e459de8a488f54550969"
 dependencies = [
  "rndr_core",
  "rndr_paint",
@@ -2541,9 +2541,9 @@ dependencies = [
 
 [[package]]
 name = "rndr_core"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9803f28d8fc0270cabe7e35f7b8a97935c3d86ce93ea2e967f45a29b2a2373ca"
+checksum = "8483ab1020d290ee992c59a1a3226c111e63318050702bb672fd000a00a54781"
 dependencies = [
  "pulldown-cmark",
  "unicode-segmentation",
@@ -2552,9 +2552,9 @@ dependencies = [
 
 [[package]]
 name = "rndr_paint"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2b99d328fa742878df9725abff89960108300eba67fc9169a4a80931b971ca9"
+checksum = "935e46ddb8d253db2d466d7b1db0e19713cc5a1bb9e78168cb61a49fcf121341"
 dependencies = [
  "lyon",
  "rndr_core",
@@ -2562,9 +2562,9 @@ dependencies = [
 
 [[package]]
 name = "rndr_render"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce6cc2f5b75effaa0e12486849da746801f5ae1b2e763a801a2c2e9a7812285b"
+checksum = "cdc234b2b220e2b44a40de60c88fd8f52c77fb1b66a9c4eb0a8e1a29246f36d9"
 dependencies = [
  "accesskit",
  "accesskit_macos",
@@ -2601,18 +2601,18 @@ dependencies = [
 
 [[package]]
 name = "rndr_std"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d32168d9fb0338c3050ab44e1efb124b4b4e7670a09f2ee69d3dcbca749d4a0"
+checksum = "6b7f54d16d58fbebc236b3cfe89a0b21bddb4633b90987b070dd368eaf834431"
 dependencies = [
  "rndr_core",
 ]
 
 [[package]]
 name = "rndr_ui"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fba56ca4934a803afb631a5825e544d382a4da6cb4dcee937c35cbba3fdaa91a"
+checksum = "5e4d9e12305aefa48f346cf5353d50741c9400c910a2070b6213885e303c19f2"
 dependencies = [
  "rndr_core",
 ]
