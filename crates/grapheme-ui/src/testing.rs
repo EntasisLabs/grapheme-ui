@@ -39,6 +39,9 @@ pub const VIEWPORT_HEIGHT: f32 = 360.0;
 /// overrides it for one run.
 pub const PNG_CHANNEL_TOLERANCE: u8 = 16;
 
+/// How long [`Harness::settle`] waits for a running store action.
+const SETTLE_WORK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
 /// How long [`Harness::settle`] waits for the View IR to stop changing.
 ///
 /// Two identical frames count as settled. The default of 8 frames is one
@@ -180,13 +183,31 @@ impl Harness {
     pub fn settle_with(&mut self, settle: Settle) -> Result<(), GraphemeUiError> {
         let frames = settle.max_frames.max(1);
         let mut previous = None;
-        for _ in 0..frames {
+        let mut counted = 0;
+        // A store action runs on the worker thread. Frames that run while it
+        // is still working do not count toward `max_frames` and cannot end
+        // the settle: two equal frames only mean the worker has not reached
+        // its next step yet. The wall-clock cap keeps a stuck task from
+        // hanging the test.
+        let deadline = std::time::Instant::now() + SETTLE_WORK_TIMEOUT;
+        while counted < frames {
             self.app.update();
             let current = canonical_ir(&self.ir_now()?);
+            if self.with_surface(|surface, _| surface.has_work())? {
+                if std::time::Instant::now() >= deadline {
+                    return Err(GraphemeUiError::Usage(format!(
+                        "store action still running after {SETTLE_WORK_TIMEOUT:?}"
+                    )));
+                }
+                previous = Some(current);
+                std::thread::sleep(std::time::Duration::from_millis(1));
+                continue;
+            }
             if previous.as_ref() == Some(&current) {
                 return Ok(());
             }
             previous = Some(current);
+            counted += 1;
         }
         Err(GraphemeUiError::Usage(format!(
             "view IR still changing after {frames} frames"

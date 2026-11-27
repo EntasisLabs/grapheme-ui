@@ -281,9 +281,13 @@ impl SessionBridge {
 
 impl Drop for SessionBridge {
     fn drop(&mut self) {
-        if self.ack_owed {
-            let _ = self.acks.send(());
-        }
+        // Close the ack channel rather than sending one ack. A task step the
+        // UI has not received yet (still in `events`) leaves `ack_owed` false
+        // while the worker already waits for its ack; with the channel closed
+        // every pending and later step wait returns, the task runs to its end,
+        // and the worker sees Shutdown. Without this the join below can hang.
+        let (closed, _) = mpsc::channel();
+        drop(std::mem::replace(&mut self.acks, closed));
         let _ = self.cmds.send(Cmd::Shutdown);
         if let Some(handle) = self.join.take() {
             let _ = handle.join();
