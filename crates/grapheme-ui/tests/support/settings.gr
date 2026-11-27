@@ -1,0 +1,52 @@
+state Settings {
+  name: String = "Ada"
+}
+
+mutation Save on Settings {
+  apply { name: $name }
+}
+
+view SettingsView on Settings {
+  Column {
+    style {
+      width: fill
+      height: fill
+      padding: { x: 24, y: 20 }
+      gap: 12
+      fill: bg
+    }
+    title: Text("Settings") {
+      style { size: 22, weight: semibold, color: text }
+    }
+    hint: Text("Appearance follows the system") {
+      style { size: 13, color: text_secondary }
+    }
+    row: Row {
+      style { width: fill, gap: 8, align: center }
+      label: Text("Name") { style { size: 14, color: text } }
+      gap: Spacer
+      save: Button(label: "Save") {
+        on click: Save
+        style {
+          padding: { x: 12, y: 6 }
+          fill: accent
+          hover { fill: hover }
+          pressed { fill: pressed }
+          focused { fill: selection }
+          disabled { fill: disabled }
+        }
+      }
+    }
+    badge: Stack {
+      style { width: 160, height: 36 }
+      plate: Column {
+        style { width: fill, height: fill, fill: selection }
+      }
+      caption: Text("Preview") { style { size: 13, color: accent } }
+    }
+  }
+}
+
+glyph SettingsApp on Settings {
+  SettingsView
+}

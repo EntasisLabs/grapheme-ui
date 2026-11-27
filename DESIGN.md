@@ -44,4 +44,6 @@ A click that arrives while a task is running is queued and runs after that task,
 
 RFC-0007: the primitive catalog is owned by GraphemeUI. `crates/grapheme-ui/catalog/v1.json` (bundled into the crate) is that document (`$catalog` is `grapheme-ui/v1`). Every compile in `load` and `engine` passes it to `GraphemeEngine::builder().element_catalog`. The compiler checks element names, props, prop types, events and payload params. It does not render.
 
-`project` dispatches `$prim` through a table keyed by the catalog element name (`Column`, `Row`, `Text`, `Button`, `TextField`). `Divider` is in that table and not in `v1.json`: a test adds it to a catalog document, and it compiles, projects and shows up in `access_tree` with no change to the Grapheme crates. The catalog hook ships in grapheme 0.10.0.
+`project` dispatches `$prim` through a table keyed by the catalog element name (`Column`, `Row`, `Text`, `Button`, `TextField`, `Spacer`, `Stack`). `Divider` is in that table and not in `v1.json`: a test adds it to a catalog document, and it compiles, projects and shows up in `access_tree` with no change to the Grapheme crates. The catalog hook ships in grapheme 0.10.0.
+
+`style { }` is language data (RFC-0007 C.5), not a catalog prop. grapheme type-checks it and this crate maps the View IR onto rndr `Layout` (`Align`, `Padding`, `MaxSize`), `TextStyle`, and rndr_ui theme tokens. `Spacer` and `Stack` are catalog elements here; the compiler does not special-case them.
