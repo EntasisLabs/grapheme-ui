@@ -380,6 +380,9 @@ impl Harness {
         let existing = read_golden(path)?;
         let expected = String::from_utf8(existing)
             .map_err(|_| GraphemeUiError::Usage(format!("{} is not UTF-8", path.display())))?;
+        // Git on Windows may check the file out with CRLF. The canonical
+        // form is LF, and the line contents are what the golden locks.
+        let expected = expected.replace("\r\n", "\n");
         if expected == text {
             return Ok(());
         }

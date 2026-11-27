@@ -56,6 +56,22 @@ fn feed_after_typing_ir() {
         .unwrap();
 }
 
+#[test]
+fn ir_golden_accepts_a_crlf_checkout() {
+    if std::env::var("UPDATE_GOLDENS").ok().as_deref() == Some("1") {
+        return;
+    }
+    let mut ui = support::counter_initial();
+    let path = std::env::temp_dir().join(format!(
+        "grapheme-ui-crlf-golden-{}.json",
+        std::process::id()
+    ));
+    let text = std::fs::read_to_string(golden("counter-initial.json")).unwrap();
+    std::fs::write(&path, text.replace('\n', "\r\n")).unwrap();
+    ui.assert_ir_golden(&path).unwrap();
+    let _ = std::fs::remove_file(&path);
+}
+
 #[cfg(feature = "capture")]
 mod png {
     use super::golden;
