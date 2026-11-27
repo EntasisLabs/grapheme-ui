@@ -44,6 +44,11 @@ enum Event {
 }
 
 /// What the UI thread should do with one worker message.
+///
+/// Snapshots are already owned. Boxing them would not change the channel,
+/// and the extra `status` field on a commit pushed the variant over clippy's
+/// size threshold.
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum WorkerEvent {
     /// Project this snapshot, then let the frame end before the task continues.
     Step(AppSnapshot),
