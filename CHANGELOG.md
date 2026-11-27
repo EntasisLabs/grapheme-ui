@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Reload no longer reuses a widget whose element changed.** View IR keys are positional, so a reload that inserted an element (say a `Spacer` before a `Button`) moved the button onto a new key and left the old button at the old key, showing two buttons. The projection now records which catalog element sits at each key; when that changes, it despawns the old widget and its subtree and mounts the new one with a fresh UiId.
+- **Dropping a surface while a task step is in flight no longer hangs.** If the worker had sent a step the UI had not received yet, `SessionBridge`'s drop sent no ack and then joined a worker that was waiting for one. Drop now closes the ack channel, so the worker finishes the task and exits.
+- **`Harness::settle` waits for a running store action.** Two equal frames while the worker was between task steps counted as settled, so a slow machine could assert on the `pending` view (seen as a hang, then a golden mismatch, in `feed_after_click_ir` on macOS). Frames while an action is running or queued no longer count, with a 10 s cap.
 
 ## [0.3.0] - 2026-11-27
 

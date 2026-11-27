@@ -148,6 +148,11 @@ impl GraphemeSurface {
             .expect("grapheme session thread stopped")
     }
 
+    /// True while a store action is running on the worker or queued behind one.
+    pub(crate) fn has_work(&self) -> bool {
+        self.bridge.has_work()
+    }
+
     /// Recompile `source` and migrate the running session (RFC-0007 A.9).
     ///
     /// A compile failure leaves the last good tree in place and shows an
