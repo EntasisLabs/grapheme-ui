@@ -28,6 +28,7 @@
 
 #![deny(missing_docs)]
 
+mod bridge;
 #[cfg(feature = "desktop")]
 pub mod desktop;
 mod engine;

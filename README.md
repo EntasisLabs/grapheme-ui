@@ -66,6 +66,8 @@ cargo run -p grapheme-ui-cli --features desktop -- run examples/feed-view.gr
 
 Clicks take rndr's normal pointer path: the button emits `HostIntent::Command`, and an Update system calls `drain_actions`, which maps the token back to a Grapheme action id. The headless test `drain_click_matches_headless_session` drives that path with a synthetic pointer (no window) and checks the store against a pure Grapheme session.
 
+The store session runs on a worker thread. A task `apply` is projected, and the frame is presented, before the task continues, so `Loading…` in `examples/feed-view.gr` can show while a capability runs. A second click during that task is queued and runs after it, in order. `cargo test -p grapheme-ui --test async_actions` covers both. The runtime callback is `StoreSession::set_commit_observer` from [grapheme#50](https://github.com/EntasisLabs/grapheme/pull/50). Publish that change first; this repo pins the commit by git until crates.io has it.
+
 Manual checklist when a display is available:
 
 1. The window title is `GraphemeUI — Counter`.
