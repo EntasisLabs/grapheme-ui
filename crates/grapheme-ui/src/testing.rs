@@ -231,6 +231,21 @@ impl Harness {
         self.click_entity(entity)
     }
 
+    /// Recompile `source` into the running session.
+    ///
+    /// A broken program leaves the last good tree up and shows
+    /// [`crate::ERROR_OVERLAY_KEY`] with the file, line, column and message.
+    /// A good program clears that overlay and keeps migrated store fields.
+    pub fn reload_source(
+        &mut self,
+        source: &str,
+        file: Option<&Path>,
+    ) -> Result<(), GraphemeUiError> {
+        self.with_surface_try(|surface, world| surface.reload_source(world, source, file))?;
+        self.app.update();
+        Ok(())
+    }
+
     /// Click the button whose View IR `label` prop equals `label`, then settle.
     pub fn click_labeled(&mut self, label: &str) -> Result<(), GraphemeUiError> {
         let key = self.button_key(label)?;

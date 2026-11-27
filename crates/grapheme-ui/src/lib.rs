@@ -44,6 +44,8 @@ mod project;
 mod style;
 mod surface;
 pub mod testing;
+#[cfg(any(test, feature = "desktop"))]
+mod watch;
 
 pub use engine::{
     CapabilityCall, CapabilityHost, HostCallError, ModuleRegistry, PolicyGuard, SurfaceBuilder,
@@ -51,6 +53,6 @@ pub use engine::{
 pub use error::GraphemeUiError;
 pub use load::{Diagnostic, LoadError, LoadedProgram, format_diagnostic, load_path, load_str};
 pub use surface::{
-    DrainStatus, GraphemeNode, GraphemeSurface, ProjectedNode, drain_installed, install,
-    with_driven_surface,
+    DrainStatus, ERROR_OVERLAY_KEY, GraphemeNode, GraphemeSurface, ProjectedNode, drain_installed,
+    install, with_driven_surface,
 };

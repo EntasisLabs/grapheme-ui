@@ -20,11 +20,13 @@ grapheme-ui = { path = "crates/grapheme-ui", version = "0.2.0" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
+notify = "6.1.1"
 
 # Language runtime: View IR + headless app session (RFC-0007). No renderer.
 # Caret ranges so dependents can unify a compatible 0.11.x / 0.5.x.
 # grapheme 0.11.0 is the first release that type-checks `style { }`
-# (RFC-0007 C.5) and records it as renderer-free View IR. Cargo.lock pins
+# (RFC-0007 C.5) and records it as renderer-free View IR, and the first
+# with diagnostic spans and `StoreSession::reload` (RFC-0007 A.9). Cargo.lock pins
 # the release this workspace tests. grapheme-artifact 0.5.0 comes in
 # transitively.
 # grapheme-sdk stays on the slim feature. grapheme-runtime defaults are off so
