@@ -42,6 +42,6 @@ A click that arrives while a task is running is queued and runs after that task,
 
 ## Catalog ownership
 
-RFC-0007: the primitive catalog is owned by GraphemeUI. `catalog/v1.json` is that document (`$catalog` is `grapheme-ui/v1`). Every compile in `load` and `engine` passes it to `GraphemeEngine::builder().element_catalog`. The compiler checks element names, props, prop types, events and payload params. It does not render.
+RFC-0007: the primitive catalog is owned by GraphemeUI. `crates/grapheme-ui/catalog/v1.json` (bundled into the crate) is that document (`$catalog` is `grapheme-ui/v1`). Every compile in `load` and `engine` passes it to `GraphemeEngine::builder().element_catalog`. The compiler checks element names, props, prop types, events and payload params. It does not render.
 
-`project` dispatches `$prim` through a table keyed by the catalog element name (`Column`, `Row`, `Text`, `Button`, `TextField`). `Divider` is in that table and not in `v1.json`: a test adds it to a catalog document, and it compiles, projects and shows up in `access_tree` with no change to the Grapheme crates. Until the catalog hook is on crates.io, this repo's grapheme dependencies point at the grapheme pull request branch.
+`project` dispatches `$prim` through a table keyed by the catalog element name (`Column`, `Row`, `Text`, `Button`, `TextField`). `Divider` is in that table and not in `v1.json`: a test adds it to a catalog document, and it compiles, projects and shows up in `access_tree` with no change to the Grapheme crates. The catalog hook ships in grapheme 0.10.0.

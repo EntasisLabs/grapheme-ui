@@ -17,7 +17,7 @@ host application
 - **Grapheme** never depends on this crate or on rndr.
 - **rndr** never depends on Grapheme or this crate. rndr apps depend on grapheme-ui; rndr itself does not.
 - **Host apps** that want Grapheme UI add `grapheme-ui` to their `Cargo.toml` (opt-in at the app, not inside rndr).
-- This crate depends on the published **grapheme 0.10.0** family (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.6.0** (`rndr_core`, `rndr_ui`). `catalog/v1.json` is the element catalog passed on every compile. Default tests stay headless: no window and no GPU.
+- This crate depends on the published **grapheme 0.10.0** family (`grapheme-sdk`, `grapheme-runtime`) and **rndr 0.6.0** (`rndr_core`, `rndr_ui`). `crates/grapheme-ui/catalog/v1.json` is the element catalog passed on every compile. Default tests stay headless: no window and no GPU.
 
 A later convenience re-export on the rndr facade (`features = ["grapheme"]`) is model **B** and is deliberately deferred.
 
